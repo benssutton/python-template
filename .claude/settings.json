@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "PowerShell(*)",
+      "Read(//c/Users/Alexander/miniconda3/envs/p312/Lib/site-packages/mcp/server/**)"
+    ]
+  }
+}

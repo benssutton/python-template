@@ -1,0 +1,22 @@
+# Fast API Service
+fastapi
+pydantic
+pydantic-settings
+httpx
+
+# MCP
+mcp
+
+# Postgres
+asyncpg
+pgvector
+sqlalchemy[asyncio]
+
+# Data
+polars
+rapidfuzz
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov
