@@ -1,0 +1,9 @@
+C:\Users\Alexander\python-template\rust-template\target\debug\deps\num_enum_derive-4affdfcc0a5936d0.d: C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\lib.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\enum_attributes.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\parsing.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\utils.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\variant_attributes.rs
+
+C:\Users\Alexander\python-template\rust-template\target\debug\deps\num_enum_derive-4affdfcc0a5936d0.dll: C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\lib.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\enum_attributes.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\parsing.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\utils.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\variant_attributes.rs
+
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\lib.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\enum_attributes.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\parsing.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\utils.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\num_enum_derive-0.7.6\src\variant_attributes.rs:

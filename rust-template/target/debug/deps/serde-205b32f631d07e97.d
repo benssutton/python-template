@@ -1,0 +1,14 @@
+C:\Users\Alexander\python-template\rust-template\target\debug\deps\serde-205b32f631d07e97.d: C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\Alexander\python-template\rust-template\target\debug\build\serde-95dc873ce519e5fe\out/private.rs
+
+C:\Users\Alexander\python-template\rust-template\target\debug\deps\libserde-205b32f631d07e97.rlib: C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\Alexander\python-template\rust-template\target\debug\build\serde-95dc873ce519e5fe\out/private.rs
+
+C:\Users\Alexander\python-template\rust-template\target\debug\deps\libserde-205b32f631d07e97.rmeta: C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\Alexander\python-template\rust-template\target\debug\build\serde-95dc873ce519e5fe\out/private.rs
+
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs:
+C:\Users\Alexander\python-template\rust-template\target\debug\build\serde-95dc873ce519e5fe\out/private.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\Alexander\\python-template\\rust-template\\target\\debug\\build\\serde-95dc873ce519e5fe\\out

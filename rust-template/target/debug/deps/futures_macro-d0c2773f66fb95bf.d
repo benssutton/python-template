@@ -1,0 +1,9 @@
+C:\Users\Alexander\python-template\rust-template\target\debug\deps\futures_macro-d0c2773f66fb95bf.d: C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\lib.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\executor.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\join.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\select.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\stream_select.rs
+
+C:\Users\Alexander\python-template\rust-template\target\debug\deps\futures_macro-d0c2773f66fb95bf.dll: C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\lib.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\executor.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\join.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\select.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\stream_select.rs
+
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\lib.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\executor.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\join.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\select.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-macro-0.3.32\src\stream_select.rs:

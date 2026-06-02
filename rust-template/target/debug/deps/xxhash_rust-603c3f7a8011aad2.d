@@ -1,0 +1,10 @@
+C:\Users\Alexander\python-template\rust-template\target\debug\deps\xxhash_rust-603c3f7a8011aad2.d: C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\lib.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\utils.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh32_common.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh64_common.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh3_common.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh3.rs
+
+C:\Users\Alexander\python-template\rust-template\target\debug\deps\libxxhash_rust-603c3f7a8011aad2.rmeta: C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\lib.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\utils.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh32_common.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh64_common.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh3_common.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh3.rs
+
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\lib.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\utils.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh32_common.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh64_common.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh3_common.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\xxhash-rust-0.8.15\src\xxh3.rs:

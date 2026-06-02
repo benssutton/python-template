@@ -1,0 +1,8 @@
+C:\Users\Alexander\python-template\rust-template\target\debug\build\target-features-f368e0e5b71e2d27\build_script_build-f368e0e5b71e2d27.d: C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\build.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\rustc-version.txt C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\target-features.txt C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\target-cpus.txt
+
+C:\Users\Alexander\python-template\rust-template\target\debug\build\target-features-f368e0e5b71e2d27\build_script_build-f368e0e5b71e2d27.exe: C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\build.rs C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\rustc-version.txt C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\target-features.txt C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\target-cpus.txt
+
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\build.rs:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\rustc-version.txt:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\target-features.txt:
+C:\Users\Alexander\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\target-features-0.1.6\target-cpus.txt:
