@@ -6,7 +6,7 @@ use crate::state::AppState;
 
 #[derive(Clone)]
 pub struct McpHandler {
-    pub state: AppState,
+    state: AppState,
     tool_router: ToolRouter<Self>,
 }
 
