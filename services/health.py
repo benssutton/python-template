@@ -1,7 +1,6 @@
 import logging
 
-from schemas.health import StatusResponse
-from core.settings import Settings
+from schemas.health import HealthStatusResponse
 
 log = logging.getLogger(__name__)
 
@@ -10,5 +9,5 @@ class HealthService:
         self.settings = settings
     
     def status(self):
-        response = StatusResponse(status=self.settings.status)
+        response = HealthStatusResponse(status=self.settings.status)
         return self.settings.status

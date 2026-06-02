@@ -8,4 +8,4 @@ class Settings(BaseSettings):
         {"name": "Health", "description": "Endpoints for checking the status and health of the application"}
     ]
     status: str = "running"
-    data_dir: str = "data"
+    data_dir: str = "./data"

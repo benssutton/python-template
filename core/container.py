@@ -2,6 +2,7 @@ import logging
 
 from core.settings import Settings
 from services.health import HealthService
+from services.data import DataService
 
 log = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ class Container:
 
     def initialise_container(self):
         self.register_singleton(HealthService, HealthService(self.settings))
+        self.register_singleton(DataService, DataService(self.settings))
 
     def get_settings(self):
         return self.settings

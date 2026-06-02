@@ -6,7 +6,6 @@ from mcp.server.fastmcp import FastMCP
 
 from core.settings import Settings
 
-
 log = logging.getLogger(__name__)
 
 settings = Settings()
@@ -24,8 +23,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-from routers import health
+from routers import health, data
 app.include_router(health.router, prefix="/health")
+app.include_router(data.router, prefix="/data")
 
 from mcp_routers import tools
 
