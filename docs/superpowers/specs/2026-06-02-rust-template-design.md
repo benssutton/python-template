@@ -45,6 +45,7 @@ same Apache Arrow IPC stream file format. Path structure is preserved where prac
 | Dependency wiring | `AppState` + `Arc<dyn Trait>` | Custom `Container` + `dependency_overrides` | Type system replaces runtime registry; no framework needed |
 | Data layer | `polars` | `polars` (Python binding) | Same crate; identical IPC file compatibility; supports heavy DataFrame ops |
 | In-process test client | `tower::ServiceExt::oneshot` | `httpx.AsyncClient(ASGITransport)` | Calls the real Router with no TCP; same wiring as production |
+| OpenAPI / Swagger UI | `utoipa`, `utoipa-swagger-ui` | FastAPI auto-generated | Proc-macro annotations on handlers and schemas; Swagger UI served at `/docs` |
 | Logging | `tracing`, `tracing-subscriber` | `logging` | Structured by default; async-aware |
 | JSON | `serde_json`, `serde` | Pydantic / `json` | `#[derive(Serialize, Deserialize)]` replaces Pydantic model definitions |
 
@@ -67,6 +68,7 @@ rust-template/
 │   ├── lib.rs               # Re-exports build_app + public types for integration tests
 │   ├── app.rs               # build_app(state: AppState) -> Router
 │   ├── config.rs            # Settings struct (serde + envy)
+│   ├── openapi.rs           # ApiDoc struct — collects all paths and schemas for OpenAPI
 │   ├── state.rs             # AppState struct — the single wiring point
 │   ├── routers/
 │   │   ├── mod.rs
@@ -98,6 +100,7 @@ rust-template/
 |---|---|
 | `main.py` | `src/main.rs` + `src/app.rs` |
 | `core/settings.py` | `src/config.rs` |
+| FastAPI `openapi_tags` + auto-generation | `src/openapi.rs` |
 | `core/container.py` + `core/dependencies.py` | `src/state.rs` |
 | `routers/health.py`, `routers/data.py` | `src/routers/health.rs`, `src/routers/data.rs` |
 | `mcp_routers/tools.py` | `src/mcp/tools.rs` |
@@ -257,7 +260,7 @@ Schemas are plain Rust structs with `serde` derives. They replace Pydantic model
 
 ```rust
 // src/schemas/data.rs
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct DataShapeResponse {
     pub height: u64,
     pub width:  u64,
@@ -266,6 +269,8 @@ pub struct DataShapeResponse {
 
 `#[derive(Serialize)]` generates the JSON serialisation code at compile time.
 `axum::Json<T>` wraps any `Serialize` type and sets `Content-Type: application/json` automatically.
+`#[derive(ToSchema)]` registers the struct with `utoipa` so it appears in the generated OpenAPI
+document — the equivalent of Pydantic's automatic schema generation.
 
 **Python equivalent:** `schemas/data.py` (Pydantic `BaseModel`).
 
@@ -281,6 +286,14 @@ Handlers are plain async functions. They receive state via Axum's `State` extrac
 use axum::{extract::State, Json};
 use crate::{state::AppState, schemas::data::DataShapeResponse};
 
+#[utoipa::path(
+    get,
+    path = "/data/shape",
+    tag = "Data Service",
+    responses(
+        (status = 200, description = "Row and column count of the dataset", body = DataShapeResponse)
+    )
+)]
 pub async fn get_shape(State(state): State<AppState>) -> Json<DataShapeResponse> {
     Json(state.data_service.get_shape())
 }
@@ -288,6 +301,11 @@ pub async fn get_shape(State(state): State<AppState>) -> Json<DataShapeResponse>
 
 `State(state): State<AppState>` is Axum's extractor syntax. The `State(state)` part destructures
 the wrapper, giving direct access to `AppState`. This replaces FastAPI's `data_service: DataServiceDep`.
+
+`#[utoipa::path]` annotates the handler with its HTTP method, path, tag, and response schema.
+`utoipa` reads these annotations at compile time to build the OpenAPI document — the equivalent of
+FastAPI inferring this from type hints and docstrings automatically. The `tag` value maps to the
+`open_api_tags` list in the Python `Settings` class.
 
 **Python equivalent:** `routers/data.py`.
 
@@ -307,11 +325,13 @@ This keeps MCP wiring internal to the `mcp` module.
 ```rust
 // src/app.rs
 use axum::{routing::get, Router};
-use crate::{routers::{health, data}, mcp, state::AppState};
+use utoipa_swagger_ui::SwaggerUi;
+use crate::{routers::{health, data}, mcp, openapi::ApiDoc, state::AppState};
 
 pub fn build_app(state: AppState) -> Router {
     let mcp_router = mcp::build_router(state.clone());
     Router::new()
+        .merge(SwaggerUi::new("/docs").url("/api-doc/openapi.json", ApiDoc::openapi()))
         .route("/health/status", get(health::get_status))
         .route("/data/shape",    get(data::get_shape))
         .nest("/mcp", mcp_router)
@@ -319,12 +339,62 @@ pub fn build_app(state: AppState) -> Router {
 }
 ```
 
+Swagger UI is served at `/docs`. The raw OpenAPI JSON is available at `/api-doc/openapi.json`.
+Both are served by the same in-process router, so they work in tests via `oneshot()` as well as
+in production.
+
 **Python equivalent:** The route registration block in `main.py`
-(`app.include_router(...)`, `app.mount(...)`).
+(`app.include_router(...)`, `app.mount(...)`). FastAPI serves Swagger UI at `/docs` by default —
+the path is intentionally preserved here.
 
 ---
 
-### 5.7 `src/mcp/tools.rs` — MCP Tools
+### 5.7 `src/openapi.rs` — OpenAPI Document
+
+`ApiDoc` is a single struct that aggregates all annotated paths and schemas into one OpenAPI
+document. This is the Rust equivalent of FastAPI's automatic collection of routes and Pydantic
+models — except it must be declared explicitly. The trade-off is verbosity for clarity: every
+path and schema that appears in the generated doc is named here.
+
+```rust
+// src/openapi.rs
+use utoipa::OpenApi;
+use crate::{routers::{health, data}, schemas::{health::HealthStatusResponse, data::DataShapeResponse}};
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        health::get_status,
+        data::get_shape,
+    ),
+    components(schemas(
+        HealthStatusResponse,
+        DataShapeResponse,
+    )),
+    tags(
+        (name = "Health",       description = "Endpoints for checking service health and status"),
+        (name = "Data Service", description = "Endpoints for querying the dataset"),
+    ),
+    info(
+        title   = "Rust Template Service",
+        version = "1.0.0",
+        description = "A Rust service with REST and MCP endpoints, ready for Claude",
+    )
+)]
+pub struct ApiDoc;
+```
+
+When a new endpoint is added, its handler function is added to `paths(...)` and any new response
+type is added to `components(schemas(...))`. This is the single registration point for the OpenAPI
+document — analogous to the `open_api_tags` list in the Python `Settings` class, but covering
+paths and schemas as well.
+
+**Python equivalent:** FastAPI handles this automatically from type annotations. `src/openapi.rs`
+makes the same information explicit and visible.
+
+---
+
+### 5.9 `src/mcp/tools.rs` — MCP Tools
 
 MCP tools are methods on a struct that holds `AppState`. The `#[tool]` proc macro from `rmcp`
 generates the JSON-RPC dispatch boilerplate, equivalent to FastMCP's `@mcp.tool()` decorator.
@@ -359,7 +429,7 @@ preserving the MCP API contract.
 
 ---
 
-### 5.8 `src/main.rs` — Entry Point
+### 5.10 `src/main.rs` — Entry Point
 
 `main.rs` is intentionally thin. Its only job is to wire the pieces together and start the server.
 
@@ -530,6 +600,8 @@ serde_json        = "1"
 envy              = "0.4"
 polars            = { version = "0.44", features = ["ipc_streaming"] }
 rmcp              = { version = "0.1", features = ["server", "transport-streamable-http-server"] }
+utoipa            = { version = "4", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "7", features = ["axum"] }
 tracing           = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
@@ -541,6 +613,8 @@ http-body-util    = "0.1"
 **Notes:**
 - `polars` features should be extended as data operations are added (e.g. `lazy`, `csv`, `parquet`).
 - `rmcp` version and feature flags should be verified against the latest release at implementation time.
+- `utoipa` version must match `utoipa-swagger-ui` major version (both on v4/v7 respectively above — verify at implementation time as these track together).
+- `utoipa`'s `axum_extras` feature enables the `IntoResponses` derive and tighter Axum type integration.
 - `tracing-subscriber`'s `env-filter` feature enables log level control via the `RUST_LOG` env var,
   which integrates naturally with K8s log configuration.
 
@@ -568,6 +642,10 @@ This section is a reference for developers familiar with the Python service lear
 | Logging | `logging.getLogger(__name__)` | `tracing::info!(...)` | Structured and async-aware; level set via `RUST_LOG` env var |
 | Shared state across tasks | Not needed (GIL / thread-per-request) | `Arc<T>` | Reference-counted pointer; cheap clone, safe concurrent access |
 | Interface / protocol | Duck typing / `Protocol` class | `trait` + `impl` | Explicit; compiler enforces implementation completeness |
+| OpenAPI schema | Pydantic model (auto-registered) | `#[derive(ToSchema)]` | Opt-in per struct; same result |
+| OpenAPI path | FastAPI infers from type hints | `#[utoipa::path(...)]` on handler | Explicit annotation; same expressiveness |
+| OpenAPI document | FastAPI builds automatically | `#[derive(OpenApi)]` on `ApiDoc` | Single explicit registry in `openapi.rs` |
+| Swagger UI | `/docs` (built-in) | `SwaggerUi::new("/docs")` in `build_app` | Same URL; served in-process |
 
 ### The one genuinely new concept: `Arc<dyn Trait>`
 
@@ -589,7 +667,7 @@ capability as `dependency_overrides`, with the concrete type enforced at compile
 
 | Feature | Status | Notes |
 |---|---|---|
-| OpenAPI / Swagger UI | Not included | FastAPI generates this automatically. Rust equivalent is `utoipa` (proc-macro annotations on handlers). Not included in the base template to keep initial scope clear; straightforward to add. |
+| OpenAPI / Swagger UI | **Included** | `utoipa` + `utoipa-swagger-ui`; served at `/docs`. See sections 5.7 and 5.6. |
 | MCP resources and prompts | Not included | `mcp_routers/resources.py` and `mcp_routers/prompts.py` have no content in the Python template. Include in Rust when Python versions are implemented. |
 | `.env` file loading | Not included | `envy` reads env vars only. Add `dotenvy` crate for local development convenience; not needed in K8s. |
 
