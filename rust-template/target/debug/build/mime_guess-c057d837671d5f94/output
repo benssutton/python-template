@@ -1,1 +1,0 @@
-cargo:rustc-env=MIME_TYPES_GENERATED_PATH=C:\Users\Alexander\python-template\rust-template\target\debug\build\mime_guess-c057d837671d5f94\out\mime_types_generated.rs
