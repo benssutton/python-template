@@ -28,3 +28,17 @@ Pytest
 - Testing: tests invoke REST endpoings via use of a test client, and override application behaviour and data as needed via dependency injection.
 - Clear separation between Routers, Schemas and Services.  Routers should implement minimal business logic instead call methods in the service class.
 - Clear separation between MCP tools, resources and prompts.  Similar to Routers these should implement minimal business logic and instead call methose in the service class.
+
+## Database Investigation
+
+When investigating a database-related issue, always start a fresh Postgres container
+via `testcontainers` by running the relevant pytest test:
+
+```bash
+pytest tests/test_config.py -v -s
+```
+
+Never connect to any container a developer may have running locally. Never assume
+an existing container is safe to query or modify. Do not reuse containers between
+investigations — each pytest session starts a clean, isolated container that is
+destroyed when the session ends.
