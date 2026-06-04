@@ -3,38 +3,71 @@ from contextlib import asynccontextmanager
 
 import pytest
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy.engine.url import make_url
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from testcontainers.postgres import PostgresContainer
 
-from core.dependencies import get_health_service, get_data_service
+from core.dependencies import get_health_service, get_data_service, get_transaction_session
 from core.settings import Settings
 from services.health import HealthService
 from services.data import DataService
+from db.transaction_store.postgres.postgres_base import PostgresBase
+import db.transaction_store.models.config  # noqa: F401 — registers Configuration with metadata
+
 
 @pytest.fixture(scope="session")
 def test_settings():
-    test_settings = Settings(status="testing",
-                             data_dir="./tests/test_data")
-    return test_settings
+    return Settings(status="testing", data_dir="./tests/test_data")
+
 
 @pytest.fixture(scope="session")
 def override_health_service(test_settings):
-    health_service = HealthService(test_settings)
-    yield health_service
+    yield HealthService(test_settings)
+
 
 @pytest.fixture(scope="session")
 def override_data_service(test_settings):
-    health_service = DataService(test_settings)
-    yield health_service
+    yield DataService(test_settings)
+
 
 @pytest.fixture(scope="session")
-async def test_client(override_health_service, override_data_service):
+def postgres_container():
+    with PostgresContainer("postgres:18") as pg:
+        yield pg
+
+
+@pytest.fixture(scope="session")
+async def transaction_engine(postgres_container):
+    url = str(make_url(postgres_container.get_connection_url()).set(drivername="postgresql+asyncpg"))
+    # On Windows, asyncpg's SSPI/GSSAPI negotiation can interfere with password
+    # auth. Supplying the password explicitly in connect_args bypasses SSPI.
+    engine = create_async_engine(
+        url, connect_args={"ssl": False, "password": postgres_container.password}
+    )
+    async with engine.begin() as conn:
+        await conn.run_sync(PostgresBase.metadata.create_all)
+    yield engine
+    await engine.dispose()
+
+
+@pytest.fixture(scope="session")
+async def transaction_session(transaction_engine):
+    factory = async_sessionmaker(transaction_engine, expire_on_commit=False)
+    async with factory() as session:
+        yield session
+
+
+@pytest.fixture(scope="session")
+async def test_client(override_health_service, override_data_service, transaction_session):
     from main import app, mcp
+
+    async def _get_test_transaction_session():
+        yield transaction_session
 
     app.dependency_overrides[get_health_service] = lambda: override_health_service
     app.dependency_overrides[get_data_service] = lambda: override_data_service
+    app.dependency_overrides[get_transaction_session] = _get_test_transaction_session
 
-    """In order to run tests async use httpx's AsyncClient.
-       This doesn't create the lifespan in main, so will need
-       to create it here"""
     @asynccontextmanager
     async def test_lifespan():
         async with mcp.session_manager.run():
