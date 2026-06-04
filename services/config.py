@@ -15,4 +15,5 @@ class ConfigService:
 
     async def set(self, key: str, value: str) -> ConfigEntry:
         entry = await self._session.merge(Configuration(key=key, value=value))
+        await self._session.flush()
         return ConfigEntry.model_validate(entry)

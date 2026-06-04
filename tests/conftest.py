@@ -51,18 +51,18 @@ async def transaction_engine(postgres_container):
 
 
 @pytest.fixture(scope="session")
-async def transaction_session(transaction_engine):
-    factory = async_sessionmaker(transaction_engine, expire_on_commit=False)
-    async with factory() as session:
-        yield session
+def transaction_session_factory(transaction_engine):
+    return async_sessionmaker(transaction_engine, expire_on_commit=False)
 
 
 @pytest.fixture(scope="session")
-async def test_client(override_health_service, override_data_service, transaction_session):
+async def test_client(override_health_service, override_data_service, transaction_session_factory):
     from main import app, mcp
 
     async def _get_test_transaction_session():
-        yield transaction_session
+        async with transaction_session_factory() as session:
+            yield session
+            await session.commit()
 
     app.dependency_overrides[get_health_service] = lambda: override_health_service
     app.dependency_overrides[get_data_service] = lambda: override_data_service
