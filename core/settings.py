@@ -1,7 +1,9 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
     app_title: str = "Template Fast API Project"
     app_version: str = "1.0.0"
     app_description: str = "A Python FAST API service with MCP endpoints and Rust extensions, ready for Claude"
