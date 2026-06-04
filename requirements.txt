@@ -11,6 +11,7 @@ mcp
 asyncpg
 pgvector
 sqlalchemy[asyncio]
+alembic
 
 # Data
 polars
@@ -20,3 +21,4 @@ rapidfuzz
 pytest
 pytest-asyncio
 pytest-cov
+testcontainers[postgresql]
