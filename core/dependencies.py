@@ -7,6 +7,7 @@ from core.settings import Settings
 from core.container import service_container
 from services.health import HealthService
 from services.data import DataService
+from services.config import ConfigService
 from db.transaction_store.postgres.postgres_engine import AsyncSessionLocal
 
 
@@ -33,3 +34,10 @@ SettingDep = Annotated[Settings, Depends(get_settings)]
 HealthServiceDep = Annotated[HealthService, Depends(get_health_service)]
 DataServiceDep = Annotated[DataService, Depends(get_data_service)]
 TransactionSessionDep = Annotated[AsyncSession, Depends(get_transaction_session)]
+
+
+def get_config_service(session: TransactionSessionDep) -> ConfigService:
+    return ConfigService(session)
+
+
+ConfigServiceDep = Annotated[ConfigService, Depends(get_config_service)]
