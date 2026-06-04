@@ -21,8 +21,12 @@ def get_data_service():
 
 async def get_transaction_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
-        yield session
-        await session.commit()
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 SettingDep = Annotated[Settings, Depends(get_settings)]
