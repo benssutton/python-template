@@ -6,8 +6,8 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
-from db.transaction_store.postgres.postgres_base import PostgresBase
-import db.transaction_store.models.config  # noqa: F401 — registers Configuration with metadata
+from persistence.transaction_store.postgres.postgres_base import PostgresBase
+import persistence.transaction_store.models.config  # noqa: F401 — registers Configuration with metadata
 
 from core.settings import Settings
 

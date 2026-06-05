@@ -6,7 +6,10 @@ from core.dependencies import HealthServiceDep
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=["Application Health"])
+TAG = "Application Health"
+TAG_METADATA = {"name": TAG, "description": "Endpoints for checking the status and health of the application"}
+
+router = APIRouter(tags=[TAG])
 
 @router.get("/status")
 async def get_health(health_service: HealthServiceDep):

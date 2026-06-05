@@ -6,7 +6,7 @@ from mcp.server.fastmcp import FastMCP
 from sqlalchemy import text
 
 from core.settings import Settings
-from db.transaction_store.postgres.postgres_engine import engine
+from persistence.transaction_store.postgres.postgres_engine import engine
 
 log = logging.getLogger(__name__)
 

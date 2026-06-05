@@ -4,7 +4,8 @@
       "Bash(*)",
       "PowerShell(*)",
       "Read(//c/Users/Alexander/miniconda3/envs/p312/Lib/site-packages/mcp/server/**)",
-      "Read(//c/Users/Alexander/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/subagent-driven-development/**)"
+      "Read(//c/Users/Alexander/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/subagent-driven-development/**)",
+      "mcp__plugin_context7_context7__query-docs"
     ]
   }
 }

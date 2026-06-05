@@ -84,7 +84,7 @@ CI/CD and UAT/prod inject `DATABASE_URL` as a runtime environment variable. Pyda
 ```yaml
 services:
   db:
-    image: postgres:16
+    image: postgres:18
     environment:
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: apppassword
@@ -283,7 +283,7 @@ The full stack is exercised: HTTP → router → `ConfigService` → SQLAlchemy 
 ```python
 @pytest.fixture(scope="session")
 def postgres_container():
-    with PostgresContainer("postgres:16") as pg:
+    with PostgresContainer("postgres:18") as pg:
         yield pg
 
 @pytest.fixture(scope="session")

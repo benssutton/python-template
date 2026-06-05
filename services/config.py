@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.transaction_store.models.config import Configuration
+from persistence.transaction_store.models.config import Configuration
 from schemas.config import ConfigEntry
 
 

@@ -11,9 +11,10 @@ from core.dependencies import get_health_service, get_data_service, get_transact
 from core.settings import Settings
 from services.health import HealthService
 from services.data import DataService
-from db.transaction_store.postgres.postgres_base import PostgresBase
-import db.transaction_store.models.config  # noqa: F401 — registers Configuration with metadata
+from persistence.transaction_store.postgres.postgres_base import PostgresBase
+import persistence.transaction_store.models.config  # noqa: F401 — registers Configuration with metadata
 
+PG_IMAGE = "postgres:18"
 
 @pytest.fixture(scope="session")
 def test_settings():
@@ -32,7 +33,7 @@ def override_data_service(test_settings):
 
 @pytest.fixture(scope="session")
 def postgres_container():
-    with PostgresContainer("postgres:18") as pg:
+    with PostgresContainer(PG_IMAGE) as pg:
         yield pg
 
 

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
 
-from db.transaction_store.postgres.postgres_base import PostgresBase
+from persistence.transaction_store.postgres.postgres_base import PostgresBase
 
 
 class Configuration(PostgresBase):
