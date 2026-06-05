@@ -4,8 +4,8 @@ __pycache__/
 # Visual Studio Code
 .vscode/
 
-# Data
-data/
+# Data (ignore root data/ but allow performance/data/ for k6 test fixtures)
+/data/
 
 # Unit test / coverage reports
 .coverage
