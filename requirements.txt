@@ -14,6 +14,9 @@ pgvector
 sqlalchemy[asyncio]
 alembic
 
+# ClickHouse
+clickhouse-connect[async]
+
 # Data
 polars
 rapidfuzz
@@ -23,3 +26,4 @@ pytest
 pytest-asyncio
 pytest-cov
 testcontainers[postgresql]
+testcontainers[clickhouse]
