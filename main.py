@@ -24,9 +24,14 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.execute(text("SELECT 1"))
 
-    ok = await ch_client.ping()
-    if not ok:
-        raise RuntimeError("ClickHouse startup ping failed")
+    try:
+        ok = await ch_client.ping()
+        if not ok:
+            raise RuntimeError("ClickHouse startup ping failed")
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        raise RuntimeError("ClickHouse startup ping failed") from exc
 
     async with mcp.session_manager.run():
         yield
@@ -50,6 +55,7 @@ app.include_router(data.router, prefix="/data")
 app.include_router(config.router, prefix="/config")
 
 # Root Endpoint
+
 @app.get("/", tags=["API Root Page"])
 async def get_root():
     return {
@@ -68,6 +74,7 @@ mcp = FastMCP(
     instructions="Tools for this template application.",
 )
 tools.register(mcp)
+
 app.mount("/mcp", mcp.streamable_http_app())
 
 
