@@ -1,10 +1,12 @@
 import asyncio
 from contextlib import asynccontextmanager
 
+import clickhouse_connect
 import pytest
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from testcontainers.clickhouse import ClickHouseContainer
 from testcontainers.postgres import PostgresContainer
 
 from core.dependencies import get_health_service, get_data_service, get_transaction_session
@@ -15,6 +17,18 @@ from persistence.transaction_store.postgres.postgres_base import PostgresBase
 import persistence.transaction_store.models.config  # noqa: F401 — registers Configuration with metadata
 
 PG_IMAGE = "postgres:18"
+CH_IMAGE = "clickhouse/clickhouse-server:latest"
+
+_CREATE_ITEMS = """
+CREATE TABLE IF NOT EXISTS items (
+    id    UInt64,
+    name  String,
+    value String
+) ENGINE = MergeTree() ORDER BY id
+"""
+
+_SEED_ITEMS = [[1, "alpha", "a"], [2, "beta", "b"], [3, "gamma", "c"]]
+
 
 @pytest.fixture(scope="session")
 def test_settings():
@@ -26,10 +40,36 @@ def override_health_service(test_settings):
     yield HealthService(test_settings)
 
 
-@pytest.fixture(scope="session")
-def override_data_service(test_settings):
-    yield DataService(test_settings)
+# ── ClickHouse fixtures ────────────────────────────────────────────────────────
 
+@pytest.fixture(scope="session")
+def clickhouse_container():
+    with ClickHouseContainer(CH_IMAGE, port=8123) as ch:
+        yield ch
+
+
+@pytest.fixture(scope="session")
+async def test_clickhouse_client(clickhouse_container):
+    http_port = int(clickhouse_container.get_exposed_port(8123))
+    client = await clickhouse_connect.get_async_client(
+        host="localhost",
+        port=http_port,
+        username=clickhouse_container.username or "default",
+        password=clickhouse_container.password or "",
+        database=clickhouse_container.dbname or "default",
+    )
+    await client.command(_CREATE_ITEMS)
+    await client.insert("items", _SEED_ITEMS, column_names=["id", "name", "value"])
+    yield client
+    await client.close()
+
+
+@pytest.fixture(scope="session")
+async def override_data_service(test_clickhouse_client):
+    yield DataService(test_clickhouse_client)
+
+
+# ── Postgres fixtures ──────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="session")
 def postgres_container():
@@ -55,6 +95,8 @@ async def transaction_engine(postgres_container):
 def transaction_session_factory(transaction_engine):
     return async_sessionmaker(transaction_engine, expire_on_commit=False)
 
+
+# ── App client ─────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="session")
 async def test_client(override_health_service, override_data_service, transaction_session_factory):
