@@ -20,23 +20,23 @@ settings = Settings()
 async def lifespan(app: FastAPI):
     ch_client = await create_client(settings)
     service_container.register_singleton(DataService, DataService(ch_client))
-
-    async with engine.begin() as conn:
-        await conn.execute(text("SELECT 1"))
-
     try:
-        ok = await ch_client.ping()
-        if not ok:
-            raise RuntimeError("ClickHouse startup ping failed")
-    except RuntimeError:
-        raise
-    except Exception as exc:
-        raise RuntimeError("ClickHouse startup ping failed") from exc
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
 
-    async with mcp.session_manager.run():
-        yield
+        try:
+            ok = await ch_client.ping()
+            if not ok:
+                raise RuntimeError("ClickHouse startup ping failed")
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            raise RuntimeError("ClickHouse startup ping failed") from exc
 
-    await close_client()
+        async with mcp.session_manager.run():
+            yield
+    finally:
+        await close_client()
 
 
 from routers import health, data, config

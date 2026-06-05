@@ -20,12 +20,6 @@ async def create_client(settings: Settings) -> AsyncClient:
     return _client
 
 
-def get_client() -> AsyncClient:
-    if _client is None:
-        raise RuntimeError("ClickHouse client not initialised — call create_client() in lifespan first")
-    return _client
-
-
 async def close_client() -> None:
     global _client
     if _client is not None:
