@@ -12,10 +12,15 @@ export function checkDataCount(res) {
 }
 
 export function checkDataRows(res) {
-  const body = JSON.parse(res.body);
   return check(res, {
     'status is 200': (r) => r.status === 200,
-    'has rows array': () => Array.isArray(body.rows),
-    'has total field': () => body.total !== undefined,
+    'has rows array': (r) => {
+      try { return Array.isArray(JSON.parse(r.body).rows); }
+      catch { return false; }
+    },
+    'has total field': (r) => {
+      try { return JSON.parse(r.body).total !== undefined; }
+      catch { return false; }
+    },
   });
 }
