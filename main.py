@@ -5,8 +5,11 @@ from fastapi import FastAPI
 from mcp.server.fastmcp import FastMCP
 from sqlalchemy import text
 
+from core.container import service_container
 from core.settings import Settings
+from persistence.analytics_store.clickhouse.clickhouse_client import create_client, close_client
 from persistence.transaction_store.postgres.postgres_engine import engine
+from services.data import DataService
 
 log = logging.getLogger(__name__)
 
@@ -15,10 +18,20 @@ settings = Settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    ch_client = await create_client(settings)
+    service_container.register_singleton(DataService, DataService(ch_client))
+
     async with engine.begin() as conn:
         await conn.execute(text("SELECT 1"))
+
+    ok = await ch_client.ping()
+    if not ok:
+        raise RuntimeError("ClickHouse startup ping failed")
+
     async with mcp.session_manager.run():
         yield
+
+    await close_client()
 
 
 from routers import health, data, config
