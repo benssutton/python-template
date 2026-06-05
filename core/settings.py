@@ -12,3 +12,9 @@ class Settings(BaseSettings):
     data_dir: str = "./data"
 
     database_url: str = "postgresql+asyncpg://user:password@localhost:5432/appdb"
+
+    clickhouse_host: str = "localhost"
+    clickhouse_port: int = 8123
+    clickhouse_user: str = "default"
+    clickhouse_password: str = ""
+    clickhouse_database: str = "default"
