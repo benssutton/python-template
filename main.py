@@ -19,7 +19,6 @@ settings = Settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with ClickHouseClient(settings) as ch_client:
-        service_container.register_singleton(DataService, DataService(ch_client))
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
 
@@ -32,6 +31,7 @@ async def lifespan(app: FastAPI):
         except Exception as exc:
             raise RuntimeError("ClickHouse startup ping failed") from exc
 
+        service_container.register_singleton(DataService, DataService(ch_client))
         async with mcp.session_manager.run():
             yield
 
