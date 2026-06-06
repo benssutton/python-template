@@ -5,23 +5,23 @@ from clickhouse_connect.driver.asyncclient import AsyncClient
 
 from core.settings import Settings
 
-_client: AsyncClient | None = None
 
+class ClickHouseClient:
+    def __init__(self, settings: Settings) -> None:
+        self._settings = settings
+        self._client: AsyncClient | None = None
 
-async def create_client(settings: Settings) -> AsyncClient:
-    global _client
-    _client = await clickhouse_connect.get_async_client(
-        host=settings.clickhouse_host,
-        port=settings.clickhouse_port,
-        username=settings.clickhouse_user,
-        password=settings.clickhouse_password,
-        database=settings.clickhouse_database,
-    )
-    return _client
+    async def __aenter__(self) -> AsyncClient:
+        self._client = await clickhouse_connect.get_async_client(
+            host=self._settings.clickhouse_host,
+            port=self._settings.clickhouse_port,
+            username=self._settings.clickhouse_user,
+            password=self._settings.clickhouse_password,
+            database=self._settings.clickhouse_database,
+        )
+        return self._client
 
-
-async def close_client() -> None:
-    global _client
-    if _client is not None:
-        await _client.close()
-        _client = None
+    async def __aexit__(self, *_: object) -> None:
+        if self._client is not None:
+            await self._client.close()
+            self._client = None

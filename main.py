@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from core.container import service_container
 from core.settings import Settings
-from persistence.analytics_store.clickhouse.clickhouse_client import create_client, close_client
+from persistence.analytics_store.clickhouse.clickhouse_client import ClickHouseClient
 from persistence.transaction_store.postgres.postgres_engine import engine
 from services.data import DataService
 
@@ -18,9 +18,8 @@ settings = Settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    ch_client = await create_client(settings)
-    service_container.register_singleton(DataService, DataService(ch_client))
-    try:
+    async with ClickHouseClient(settings) as ch_client:
+        service_container.register_singleton(DataService, DataService(ch_client))
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
 
@@ -35,8 +34,6 @@ async def lifespan(app: FastAPI):
 
         async with mcp.session_manager.run():
             yield
-    finally:
-        await close_client()
 
 
 from routers import health, data, config
