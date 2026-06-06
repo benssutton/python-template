@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from testcontainers.clickhouse import ClickHouseContainer
 from testcontainers.postgres import PostgresContainer
 
+from core.container import service_container
 from core.dependencies import get_health_service, get_data_service, get_transaction_session
 from core.settings import Settings
 from services.health import HealthService
@@ -106,6 +107,9 @@ async def test_client(override_health_service, override_data_service, transactio
     app.dependency_overrides[get_health_service] = lambda: override_health_service
     app.dependency_overrides[get_data_service] = lambda: override_data_service
     app.dependency_overrides[get_transaction_session] = _get_test_transaction_session
+
+    service_container.register_singleton(HealthService, override_health_service)
+    service_container.register_singleton(DataService, override_data_service)
 
     @asynccontextmanager
     async def test_lifespan():
