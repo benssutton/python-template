@@ -15,9 +15,6 @@ class Container:
     def initialise_container(self):
         self.register_singleton(HealthService, HealthService(self.settings))
 
-    def get_settings(self):
-        return self.settings
-
     def register_singleton(self, service_type: type, instance):
         self._singletons[service_type] = instance
 
