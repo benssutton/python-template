@@ -11,7 +11,6 @@ from testcontainers.clickhouse import ClickHouseContainer
 from testcontainers.postgres import PostgresContainer
 
 from core.dependencies import get_health_service, get_data_service, get_transaction_session
-from mcp_routers import tools as mcp_tools
 from core.settings import Settings
 from services.health import HealthService
 from services.data import DataService
@@ -110,7 +109,6 @@ async def test_client(override_health_service, override_data_service, transactio
 
     @asynccontextmanager
     async def test_lifespan():
-        mcp_tools.register(mcp)
         async with mcp.session_manager.run():
             yield
 

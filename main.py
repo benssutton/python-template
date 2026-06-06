@@ -10,7 +10,7 @@ from core.settings import get_settings
 from persistence.analytics_store.clickhouse.clickhouse_client import ClickHouseClient
 from persistence.transaction_store.postgres.postgres_engine import engine
 from routers import health, data, config
-from mcp_routers import tools, resources, prompts
+from mcp_routers import tools
 from services.data import DataService
 
 log = logging.getLogger(__name__)
@@ -23,12 +23,11 @@ mcp = FastMCP(
     instructions="Tools for this template application.",
 )
 
+tools.register(mcp)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    tools.register(mcp)
-    resources.register(mcp)
-    prompts.register(mcp)
     async with ClickHouseClient(settings) as ch_client:
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
