@@ -1,22 +1,20 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import asyncpg
 import pytest
 import pyarrow.ipc as pa_ipc
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy.engine.url import make_url
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from testcontainers.clickhouse import ClickHouseContainer
 from testcontainers.postgres import PostgresContainer
 
 from core.container import service_container
-from core.dependencies import get_health_service, get_data_service, get_transaction_session
+from core.dependencies import get_health_service, get_data_service, get_config_service
 from core.settings import Settings
+from services.config import ConfigService
 from services.health import HealthService
 from services.data import DataService
-from persistence.transaction_store.postgres.postgres_base import PostgresBase
 from persistence.analytics_store.clickhouse.clickhouse_client import ClickHouseClient
-import persistence.transaction_store.models.config  # noqa: F401 — registers Configuration with metadata
 
 PG_IMAGE = "postgres:18"
 CH_IMAGE = "clickhouse/clickhouse-server:latest"
@@ -68,26 +66,23 @@ def postgres_container():
 
 
 @pytest.fixture(scope="session")
-async def transaction_engine(postgres_container):
-    url = str(make_url(postgres_container.get_connection_url()).set(drivername="postgresql+asyncpg"))
-    # On Windows, asyncpg's SSPI/GSSAPI negotiation can interfere with password
-    # auth. Supplying the password explicitly in connect_args bypasses SSPI.
-    engine = create_async_engine(
-        url, connect_args={"ssl": False, "password": postgres_container.password}
+async def postgres_pool(postgres_container):
+    pool = await asyncpg.create_pool(
+        host="localhost",
+        port=int(postgres_container.get_exposed_port(5432)),
+        user=postgres_container.username,
+        password=postgres_container.password,
+        database=postgres_container.dbname,
+        ssl=False,
     )
-    async with engine.begin() as conn:
-        await conn.run_sync(PostgresBase.metadata.create_all)
-    yield engine
-    await engine.dispose()
-
-
-@pytest.fixture(scope="session")
-def transaction_session_factory(transaction_engine):
-    return async_sessionmaker(transaction_engine, expire_on_commit=False)
+    schema_sql = (Path(__file__).parent.parent / "scripts" / "postgres-init.sql").read_text()
+    async with pool.acquire() as conn:
+        await conn.execute(schema_sql)
+    yield pool
+    await pool.close()
 
 
 # ── App client ─────────────────────────────────────────────────────────────────
-
 
 @pytest.fixture(scope="session")
 async def override_data_service(test_clickhouse_client):
@@ -95,20 +90,21 @@ async def override_data_service(test_clickhouse_client):
 
 
 @pytest.fixture(scope="session")
-async def test_client(override_health_service, override_data_service, transaction_session_factory):
-    from main import app, mcp
+async def override_config_service(postgres_pool):
+    yield ConfigService(postgres_pool)
 
-    async def _get_test_transaction_session():
-        async with transaction_session_factory() as session:
-            yield session
-            await session.commit()
+
+@pytest.fixture(scope="session")
+async def test_client(override_health_service, override_data_service, override_config_service):
+    from main import app, mcp
 
     app.dependency_overrides[get_health_service] = lambda: override_health_service
     app.dependency_overrides[get_data_service] = lambda: override_data_service
-    app.dependency_overrides[get_transaction_session] = _get_test_transaction_session
+    app.dependency_overrides[get_config_service] = lambda: override_config_service
 
     service_container.register_singleton(HealthService, override_health_service)
     service_container.register_singleton(DataService, override_data_service)
+    service_container.register_singleton(ConfigService, override_config_service)
 
     @asynccontextmanager
     async def test_lifespan():
