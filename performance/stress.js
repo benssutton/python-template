@@ -27,11 +27,14 @@ export function setup() {
   const baseUrl = __ENV.BASE_URL || 'http://localhost:8000';
   const res = http.get(`${baseUrl}/health/status`);
   check(res, { 'app is healthy before stress': (r) => r.status === 200 });
+  if (res.status !== 200) {
+    throw new Error(`App health check failed: ${res.status}`);
+  }
   return { baseUrl };
 }
 
 export default function (data) {
-  if (__ITER % 2 === 0) {
+  if ((__VU + __ITER) % 2 === 0) {
     checkDataCount(http.get(`${data.baseUrl}/data/count`));
   } else {
     checkDataRows(http.get(`${data.baseUrl}/data/rows`));
