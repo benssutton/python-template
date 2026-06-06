@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 
 class ConfigSetRequest(BaseModel):
@@ -9,4 +9,3 @@ class ConfigSetRequest(BaseModel):
 class ConfigEntry(BaseModel):
     key: str
     value: str
-    model_config = ConfigDict(from_attributes=True)

@@ -1,19 +1,27 @@
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+import asyncpg
 
-from persistence.transaction_store.models.config import Configuration
 from schemas.config import ConfigEntry
 
 
 class ConfigService:
-    def __init__(self, session: AsyncSession):
-        self._session = session
+    def __init__(self, pool: asyncpg.Pool) -> None:
+        self._pool = pool
 
     async def get_all(self) -> list[ConfigEntry]:
-        result = await self._session.execute(select(Configuration))
-        return [ConfigEntry.model_validate(row) for row in result.scalars()]
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch("SELECT key, value FROM configuration ORDER BY key")
+            return [ConfigEntry(key=row["key"], value=row["value"]) for row in rows]
 
     async def set(self, key: str, value: str) -> ConfigEntry:
-        entry = await self._session.merge(Configuration(key=key, value=value))
-        await self._session.flush()
-        return ConfigEntry.model_validate(entry)
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                INSERT INTO configuration (key, value)
+                VALUES ($1, $2)
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+                RETURNING key, value
+                """,
+                key,
+                value,
+            )
+            return ConfigEntry(key=row["key"], value=row["value"])
