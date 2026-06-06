@@ -2,6 +2,7 @@ import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { SharedArray } from 'k6/data';
 import { checkStatus200, checkDataCount, checkDataRows } from './lib/checks.js';
+import { NORMAL_SLO, STRICT_SLO } from './lib/thresholds.js';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8000';
 
@@ -30,10 +31,10 @@ export const options = {
     },
   },
   thresholds: {
-    'http_req_duration{scenario:browse_data}': ['p(95)<500'],
-    'http_req_failed{scenario:browse_data}':   ['rate<0.01'],
-    'http_req_duration{scenario:health_poll}': ['p(95)<200'],
-    'http_req_failed{scenario:health_poll}':   ['rate<0.01'],
+    'http_req_duration{scenario:browse_data}': NORMAL_SLO.http_req_duration,
+    'http_req_failed{scenario:browse_data}':   NORMAL_SLO.http_req_failed,
+    'http_req_duration{scenario:health_poll}': STRICT_SLO.http_req_duration,
+    'http_req_failed{scenario:health_poll}':   STRICT_SLO.http_req_failed,
   },
 };
 
