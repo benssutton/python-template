@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     clickhouse_password: str = ""
     clickhouse_database: str = "default"
 
+    redis_url: str = "redis://localhost:6379/0"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

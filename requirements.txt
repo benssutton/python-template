@@ -15,6 +15,9 @@ asyncpg
 # ClickHouse
 clickhouse-connect[async]
 
+# Redis
+redis[hiredis]
+
 # Data
 polars
 pyarrow
@@ -26,3 +29,4 @@ pytest-asyncio
 pytest-cov
 testcontainers[postgresql]
 testcontainers[clickhouse]
+testcontainers[redis]
