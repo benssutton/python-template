@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import clickhouse_connect
 from clickhouse_connect.driver.asyncclient import AsyncClient
 

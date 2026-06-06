@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncpg
 
 from core.settings import Settings

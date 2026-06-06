@@ -6,3 +6,9 @@ async def test_health_status(test_client):
     response = await test_client.get("/health/status")
     assert response.status_code == 200
     assert response.json() == {"status": "testing"}
+
+
+async def test_root_returns_non_empty_json(test_client):
+    response = await test_client.get("/")
+    assert response.status_code == 200
+    assert response.json()

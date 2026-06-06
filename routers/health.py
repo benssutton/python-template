@@ -8,7 +8,10 @@ from schemas.health import HealthStatusResponse
 log = logging.getLogger(__name__)
 
 TAG = "Application Health"
-TAG_METADATA = {"name": TAG, "description": "Endpoints for checking the status and health of the application"}
+TAG_METADATA = {
+    "name": TAG,
+    "description": "Endpoints for checking the status and health of the application"
+    }
 
 router = APIRouter(tags=[TAG])
 
