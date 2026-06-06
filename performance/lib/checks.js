@@ -7,7 +7,10 @@ export function checkStatus200(res) {
 export function checkDataCount(res) {
   return check(res, {
     'status is 200': (r) => r.status === 200,
-    'has count field': (r) => JSON.parse(r.body).count !== undefined,
+    'has count field': (r) => {
+      try { return JSON.parse(r.body).count !== undefined; }
+      catch { return false; }
+    },
   });
 }
 
