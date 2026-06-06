@@ -7,6 +7,7 @@ from core.container import service_container
 from services.health import HealthService
 from services.data import DataService
 from services.config import ConfigService
+from services.cache import CacheService
 
 
 def get_health_service() -> HealthService:
@@ -21,7 +22,12 @@ def get_config_service() -> ConfigService:
     return service_container.get(ConfigService)
 
 
+def get_cache_service() -> CacheService:
+    return service_container.get(CacheService)
+
+
 SettingDep = Annotated[Settings, Depends(get_settings)]
 HealthServiceDep = Annotated[HealthService, Depends(get_health_service)]
 DataServiceDep = Annotated[DataService, Depends(get_data_service)]
 ConfigServiceDep = Annotated[ConfigService, Depends(get_config_service)]
+CacheServiceDep = Annotated[CacheService, Depends(get_cache_service)]
