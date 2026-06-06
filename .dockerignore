@@ -1,0 +1,14 @@
+.env
+.envrc
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+/data/
+certs/
+.coverage
+.pytest_cache/
+.git/
+docs/
+performance/
+*.md
