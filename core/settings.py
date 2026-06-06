@@ -13,9 +13,9 @@ class Settings(BaseSettings):
     status: str = "running"
     data_dir: str = "./data"
 
-    database_url: str = "postgresql+asyncpg://user:password@localhost:5432/appdb"
-    db_pool_size: int = 5
-    db_pool_max_overflow: int = 10
+    postgres_url: str = "postgresql://user:password@localhost:5432/appdb"
+    postgres_pool_min_size: int = 2
+    postgres_pool_max_size: int = 10
 
     clickhouse_host: str = "localhost"
     clickhouse_port: int = 8123
