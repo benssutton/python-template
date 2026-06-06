@@ -20,7 +20,8 @@ class DataService:
         total = count_result.first_row[0]
 
         result = await self._client.query(
-            f"SELECT id, name, value FROM items LIMIT {limit} OFFSET {offset}"
+            "SELECT id, name, value FROM items LIMIT %(limit)s OFFSET %(offset)s",
+            parameters={"limit": limit, "offset": offset},
         )
         rows = [
             DataRowResponse(id=row[0], name=row[1], value=row[2])
