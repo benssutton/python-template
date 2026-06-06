@@ -1,3 +1,8 @@
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 stages:
   - test
   - performance-smoke
@@ -7,14 +12,20 @@ stages:
 pytest:
   stage: test
   image: python:3.12
+  cache:
+    key:
+      files:
+        - requirements.txt
+    paths:
+      - .pip-cache/
   script:
-    - pip install -r requirements.txt
+    - pip install --cache-dir .pip-cache -r requirements.txt
     - pytest tests/ -v --cov
 
 .k6-base:
-  image: docker:latest
+  image: docker:27
   services:
-    - name: docker:dind
+    - name: docker:27-dind
       alias: docker
   variables:
     DOCKER_HOST: tcp://docker:2375
