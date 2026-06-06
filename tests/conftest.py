@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import pytest
 from httpx import AsyncClient, ASGITransport
@@ -18,14 +19,6 @@ import persistence.transaction_store.models.config  # noqa: F401 — registers C
 
 PG_IMAGE = "postgres:18"
 CH_IMAGE = "clickhouse/clickhouse-server:latest"
-
-_CREATE_ITEMS = """
-CREATE TABLE IF NOT EXISTS items (
-    id    UInt64,
-    name  String,
-    value String
-) ENGINE = MergeTree() ORDER BY id
-"""
 
 _SEED_ITEMS = [[1, "alpha", "a"], [2, "beta", "b"], [3, "gamma", "c"]]
 
@@ -56,10 +49,11 @@ async def test_clickhouse_client(clickhouse_container):
         clickhouse_port=http_port,
         clickhouse_user=clickhouse_container.username or "default",
         clickhouse_password=clickhouse_container.password or "",
-        clickhouse_database=clickhouse_container.dbname or "default",
+        clickhouse_database="default",
     )
     async with ClickHouseClient(ch_settings) as client:
-        await client.command(_CREATE_ITEMS)
+        _DDL = (Path(__file__).parent.parent / "scripts" / "clickhouse-init.sql").read_text()
+        await client.command(_DDL)
         await client.insert("items", _SEED_ITEMS, column_names=["id", "name", "value"])
         yield client
 
