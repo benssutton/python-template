@@ -9,10 +9,10 @@ from alembic import context
 from persistence.transaction_store.postgres.postgres_base import PostgresBase
 import persistence.transaction_store.models.config  # noqa: F401 — registers Configuration with metadata
 
-from core.settings import Settings
+from core.settings import get_settings
 
 config = context.config
-config.set_main_option("sqlalchemy.url", Settings().database_url)
+config.set_main_option("sqlalchemy.url", get_settings().database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

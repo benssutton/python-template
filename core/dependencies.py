@@ -3,15 +3,13 @@ from typing import Annotated, AsyncGenerator
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.settings import Settings
+from core.settings import Settings, get_settings
 from core.container import service_container
 from services.health import HealthService
 from services.data import DataService
 from services.config import ConfigService
 from persistence.transaction_store.postgres.postgres_engine import AsyncSessionLocal
 
-def get_settings():
-    return service_container.get_settings()
 
 def get_health_service():
     return service_container.get(HealthService)
