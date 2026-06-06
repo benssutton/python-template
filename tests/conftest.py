@@ -51,10 +51,10 @@ async def test_clickhouse_client(clickhouse_container):
         clickhouse_password=clickhouse_container.password or "",
         clickhouse_database="default",
     )
+    schema_sql = (Path(__file__).parent.parent / "scripts" / "clickhouse-init.sql").read_text()
     async with ClickHouseClient(ch_settings) as client:
-        _DDL = (Path(__file__).parent.parent / "scripts" / "clickhouse-init.sql").read_text()
-        await client.command(_DDL)
-        await client.insert("items", _SEED_ITEMS, column_names=["id", "name", "value"])
+        await client.command(schema_sql)
+        await client.insert("default.items", _SEED_ITEMS, column_names=["id", "name", "value"])
         yield client
 
 
