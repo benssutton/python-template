@@ -64,8 +64,8 @@ async def test_mcp(test_client):
     assert response.status_code==200
     r = parse_mcp_response(response)
     tools = set([tool["name"] for tool in r["result"]["tools"]])
-    assert "get_health_service_tool" in tools
-    assert "get_data_service_tool" in tools
+    assert "get_health_status" in tools
+    assert "get_data_count" in tools
 
     # Iterative call tools
     for tool_name in tools:
