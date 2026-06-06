@@ -1,0 +1,63 @@
+stages:
+  - test
+  - performance-smoke
+  - performance-load
+  - performance-stress
+
+pytest:
+  stage: test
+  image: python:3.12
+  script:
+    - pip install -r requirements.txt
+    - pytest tests/ -v --cov
+
+.k6-base:
+  image: docker:latest
+  services:
+    - name: docker:dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - docker compose up -d --wait
+    - docker build -t perf-scripts ./performance
+  after_script:
+    - docker compose down -v
+
+k6-smoke:
+  extends: .k6-base
+  stage: performance-smoke
+  needs: [pytest]
+  script:
+    - >
+      docker run --rm
+      --network python-template_default
+      -e BASE_URL=http://app:8000
+      perf-scripts run /scripts/smoke.js
+
+k6-load:
+  extends: .k6-base
+  stage: performance-load
+  needs: [k6-smoke]
+  script:
+    - >
+      docker run --rm
+      --network python-template_default
+      -e BASE_URL=http://app:8000
+      perf-scripts run /scripts/load.js
+
+k6-stress:
+  extends: .k6-base
+  stage: performance-stress
+  needs: [k6-load]
+  allow_failure: true
+  variables:
+    TARGET_RPS: "50"
+  script:
+    - >
+      docker run --rm
+      --network python-template_default
+      -e BASE_URL=http://app:8000
+      -e TARGET_RPS=$TARGET_RPS
+      perf-scripts run /scripts/stress.js
