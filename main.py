@@ -30,7 +30,7 @@ tools.register(mcp)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with PostgresClient(settings) as pg_pool:
-        schema_sql = Path("scripts/postgres-init.sql").read_text()
+        schema_sql = (Path(__file__).parent / "scripts" / "postgres-init.sql").read_text()
         async with pg_pool.acquire() as conn:
             await conn.execute(schema_sql)
         service_container.register_singleton(ConfigService, ConfigService(pg_pool))
