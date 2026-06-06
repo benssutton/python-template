@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import pytest
+import pyarrow.ipc as pa_ipc
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
@@ -19,8 +20,6 @@ import persistence.transaction_store.models.config  # noqa: F401 — registers C
 
 PG_IMAGE = "postgres:18"
 CH_IMAGE = "clickhouse/clickhouse-server:latest"
-
-_SEED_ITEMS = [[1, "alpha", "a"], [2, "beta", "b"], [3, "gamma", "c"]]
 
 
 @pytest.fixture(scope="session")
@@ -54,7 +53,9 @@ async def test_clickhouse_client(clickhouse_container):
     schema_sql = (Path(__file__).parent.parent / "scripts" / "clickhouse-init.sql").read_text()
     async with ClickHouseClient(ch_settings) as client:
         await client.command(schema_sql)
-        await client.insert("default.items", _SEED_ITEMS, column_names=["id", "name", "value"])
+        with pa_ipc.open_file(Path(__file__).parent / "data" / "items.arrow") as reader:
+            arrow_table = reader.read_all()
+        await client.insert_arrow("default.items", arrow_table)
         yield client
 
 

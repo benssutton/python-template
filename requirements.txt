@@ -20,7 +20,7 @@ clickhouse-connect[async]
 
 # Data
 polars
-rapidfuzz
+pyarrow
 
 # Testing
 pytest
