@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { SharedArray } from 'k6/data';
-import { checkStatus200, checkDataCount, checkDataRows } from './lib/checks.js';
+import { checkStatus200, checkDataRows } from './lib/checks.js';
 import { NORMAL_SLO, STRICT_SLO } from './lib/thresholds.js';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8000';
@@ -41,8 +41,7 @@ export const options = {
 export function browseData() {
   const p = rowParams[Math.floor(Math.random() * rowParams.length)];
   group('data', () => {
-    checkDataRows(http.get(`${BASE_URL}/data/rows?limit=${p.limit}&offset=${p.offset}`));
-    checkDataCount(http.get(`${BASE_URL}/data/count`));
+    checkDataRows(http.get(`${BASE_URL}/data?limit=${p.limit}`));
   });
   sleep(1);
 }

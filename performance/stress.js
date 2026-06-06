@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { checkDataCount, checkDataRows } from './lib/checks.js';
+import { checkDataRows } from './lib/checks.js';
 import { RELAXED_SLO } from './lib/thresholds.js';
 
 const TARGET_RPS = parseInt(__ENV.TARGET_RPS || '50', 10);
@@ -34,11 +34,7 @@ export function setup() {
 }
 
 export default function (data) {
-  if ((__VU + __ITER) % 2 === 0) {
-    checkDataCount(http.get(`${data.baseUrl}/data/count`));
-  } else {
-    checkDataRows(http.get(`${data.baseUrl}/data/rows`));
-  }
+  checkDataRows(http.get(`${data.baseUrl}/data`));
 }
 
 export function teardown(data) {
