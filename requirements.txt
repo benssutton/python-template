@@ -1,5 +1,6 @@
 # Fast API Service
 fastapi
+uvicorn[standard]
 pydantic
 pydantic-settings
 python-dotenv
