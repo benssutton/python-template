@@ -11,9 +11,6 @@ mcp
 
 # Postgres
 asyncpg
-pgvector
-sqlalchemy[asyncio]
-alembic
 
 # ClickHouse
 clickhouse-connect[async]

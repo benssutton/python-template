@@ -13,23 +13,21 @@ main.py                         FastAPI app entry point; lifespan manages DB con
   services/                     All business logic (health, data, config)
   mcp_routers/                  MCP tools, resources and prompts
   persistence/
-    transaction_store/          Postgres via SQLAlchemy async + Alembic
-      postgres/                 Engine, session factory, declarative base
-      models/                   SQLAlchemy ORM models
+    transaction_store/          Postgres via asyncpg connection pool
+      postgres/                 PostgresClient context manager (wraps asyncpg.Pool)
     analytics_store/
       clickhouse/               ClickHouse via clickhouse-connect async client
-  alembic/                      Schema migrations (async env.py)
+  scripts/                      SQL DDL for both Postgres and ClickHouse (run at startup / via docker-compose)
   performance/                  k6 performance test scripts
     lib/                        Shared k6 check helpers and SLO threshold presets
     data/                       k6 test data (rows_params.json, clickhouse-seed.sql)
-  scripts/                      Shared SQL DDL and utility scripts
   tests/                        Pytest integration tests
     data/                       Binary test fixtures (items.arrow)
 ```
 
 ## Stack
 - FastAPI + Pydantic
-- SQLAlchemy (async) + Alembic — Postgres transaction store
+- asyncpg — Postgres transaction store (direct, no ORM)
 - clickhouse-connect[async] — ClickHouse analytics store
 - polars / pyarrow — data shaping and Arrow IPC fixtures
 - pytest + testcontainers — integration tests against real DB containers
@@ -51,9 +49,10 @@ main.py                         FastAPI app entry point; lifespan manages DB con
 - `core/settings.py` uses Pydantic `BaseSettings` — env vars override defaults, `.env` is auto-loaded.
 
 **Persistence — Postgres**
-- SQLAlchemy async engine and session factory live in `persistence/transaction_store/postgres/`.
-- Sessions are injected via `TransactionSessionDep`; commit/rollback is managed in the dependency, not in services.
-- Schema changes go through Alembic migrations in `alembic/versions/`.
+- `PostgresClient` in `persistence/transaction_store/postgres/postgres_client.py` mirrors `ClickHouseClient`: async context manager whose `__aenter__` returns a live `asyncpg.Pool`, `__aexit__` closes it.
+- In `main.py` the lifespan wraps startup in `async with PostgresClient(settings) as pg_pool:`. `ConfigService` is registered as a singleton holding the pool.
+- Schema is in `scripts/postgres-init.sql` (DDL only, `CREATE TABLE IF NOT EXISTS`). The lifespan runs it at startup — idempotent, no migration tooling needed.
+- Services acquire connections per-operation via `async with pool.acquire() as conn:`. No session injection into routes.
 
 **Persistence — ClickHouse**
 - `ClickHouseClient` in `persistence/analytics_store/clickhouse/clickhouse_client.py` is an async context manager class. Use `async with ClickHouseClient(settings) as client:` — `__aenter__` returns the raw `AsyncClient`, `__aexit__` closes it. No module-level global state.
@@ -70,6 +69,7 @@ main.py                         FastAPI app entry point; lifespan manages DB con
 - Tests invoke REST endpoints via an async HTTPX test client.
 - Application behaviour is overridden via FastAPI dependency injection (no monkeypatching).
 - Each test session starts fresh testcontainer instances for Postgres and ClickHouse; containers are torn down at session end.
+- Postgres schema is created from `scripts/postgres-init.sql` via the `postgres_pool` fixture.
 - ClickHouse schema is created from `scripts/clickhouse-init.sql` (single source of truth shared with docker-compose). Seed data is loaded from `tests/data/items.arrow` via `client.insert_arrow()`.
 
 **Performance Tests**
@@ -80,9 +80,10 @@ main.py                         FastAPI app entry point; lifespan manages DB con
 - The docker-compose project is named `python-template` so the network is always `python-template_default`.
 
 **SQL Management**
+- `scripts/postgres-init.sql` — DDL only (CREATE TABLE IF NOT EXISTS). Run by the app lifespan at startup and by pytest via `postgres_pool` fixture.
 - `scripts/clickhouse-init.sql` — DDL only (CREATE TABLE). Used by both docker-compose and pytest.
 - `performance/data/clickhouse-seed.sql` — DML only (INSERT). Used by docker-compose for performance test data.
-- docker-compose mounts both as `01-schema.sql` and `02-seed.sql` so ClickHouse runs them in order.
+- docker-compose mounts the ClickHouse scripts as `01-schema.sql` and `02-seed.sql` so ClickHouse runs them in order.
 
 ## Database Investigation
 
