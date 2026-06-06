@@ -25,6 +25,12 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://localhost:6379/0"
 
+    flight_host: str = "localhost"
+    flight_port: int = 8815          # pyarrow Flight default
+    flight_ticket: str = "items"
+    lsm_flush_rows: int = 1000       # memtable -> run threshold
+    lsm_compaction_runs: int = 4     # run count -> compaction threshold
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
