@@ -21,6 +21,8 @@ services:
     image: clickhouse/clickhouse-server:latest
     ports:
       - "8123:8123"
+    environment:
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     volumes:
       - ./performance/data/clickhouse-init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
