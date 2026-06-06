@@ -5,4 +5,4 @@ async def test_health_status(test_client):
     """
     response = await test_client.get("/health/status")
     assert response.status_code == 200
-    assert response.json() == "testing"
+    assert response.json() == {"status": "testing"}
