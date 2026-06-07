@@ -81,3 +81,21 @@ async def test_stop_without_start_is_noop():
     store = LSMStore(flush_rows=100, compaction_runs=100)
     svc = FlightCacheService(_FakeClient(_FakeReader([])), store, Settings())
     await svc.stop()  # must not raise
+
+
+def test_consume_breaks_on_read_error():
+    class _RaisingReader:
+        def read_chunk(self):
+            raise RuntimeError("boom")
+
+    class _RaisingClient:
+        def do_get(self, ticket):
+            return _RaisingReader()
+
+        def close(self):
+            pass
+
+    store = LSMStore(flush_rows=100, compaction_runs=100)
+    svc = FlightCacheService(_RaisingClient(), store, Settings())
+    svc._consume_loop()  # must log the error and break, not raise
+    assert store.query(10) == ([], 0)

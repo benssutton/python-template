@@ -31,3 +31,30 @@ def test_empty_script_rejected():
     location = flight.Location.for_grpc_tcp("localhost", 0)
     with pytest.raises(ValueError):
         ExampleFlightServer(location, [], interval=0.0)
+
+
+def test_default_script_exercises_lsm_edge_cases():
+    from persistence.stream_store.flight.example_server import _default_script
+
+    script = _default_script()
+    assert len(script) == 3
+    assert script[0].num_rows == 3                       # initial upserts
+    assert script[2].column("op").to_pylist() == ["delete"]  # tombstone batch
+
+
+def test_main_uses_env_and_serves(monkeypatch):
+    import persistence.stream_store.flight.example_server as es
+
+    served = {}
+
+    def fake_serve(self):
+        served["port"] = self.port
+
+    monkeypatch.setattr(es.ExampleFlightServer, "serve", fake_serve)
+    monkeypatch.setenv("FLIGHT_BIND_HOST", "localhost")
+    monkeypatch.setenv("FLIGHT_PORT", "0")
+    monkeypatch.setenv("FLIGHT_INTERVAL", "0.0")
+
+    es.main()  # builds location, constructs the server (loop=True), calls our fake serve
+
+    assert "port" in served
