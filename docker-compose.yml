@@ -42,6 +42,16 @@ services:
       timeout: 5s
       retries: 10
 
+  flight:
+    build: .
+    command: ["python", "-m", "persistence.stream_store.flight.example_server"]
+    environment:
+      FLIGHT_BIND_HOST: 0.0.0.0
+      FLIGHT_PORT: "8815"
+      FLIGHT_INTERVAL: "0.2"
+    ports:
+      - "8815:8815"
+
   app:
     build: .
     ports:
@@ -51,6 +61,8 @@ services:
       CLICKHOUSE_HOST: clickhouse
       CLICKHOUSE_PORT: "8123"
       REDIS_URL: redis://redis:6379/0
+      FLIGHT_HOST: flight
+      FLIGHT_PORT: "8815"
     depends_on:
       db:
         condition: service_healthy
@@ -58,6 +70,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      flight:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/status')\""]
       interval: 5s
