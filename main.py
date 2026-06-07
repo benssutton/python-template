@@ -12,9 +12,12 @@ from persistence.cache_store.redis.redis_client import RedisClient
 from persistence.transaction_store.postgres.postgres_client import PostgresClient
 from routers import health, data, config, cache
 from mcp_routers import tools
+from persistence.stream_store.flight.flight_client import FlightCacheClient
+from persistence.stream_store.flight.lsm_store import LSMStore
 from services.cache import CacheService
 from services.config import ConfigService
 from services.data import DataService
+from services.flight_cache import FlightCacheService
 
 log = logging.getLogger(__name__)
 
@@ -46,8 +49,20 @@ def create_lifespan(settings: Settings):
                         raise RuntimeError("ClickHouse startup ping failed")
                     service_container.register_singleton(DataService, DataService(ch_client))
 
-                    async with mcp.session_manager.run():
-                        yield
+                    async with FlightCacheClient(settings) as flight_client:
+                        store = LSMStore(
+                            flush_rows=settings.lsm_flush_rows,
+                            compaction_runs=settings.lsm_compaction_runs,
+                            key_columns=["id"],
+                        )
+                        flight_service = FlightCacheService(flight_client, store, settings)
+                        await flight_service.start()
+                        service_container.register_singleton(FlightCacheService, flight_service)
+                        try:
+                            async with mcp.session_manager.run():
+                                yield
+                        finally:
+                            await flight_service.stop()
     return lifespan
 
 
