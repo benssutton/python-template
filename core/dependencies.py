@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from core.settings import Settings, get_settings
+from settings import Settings, get_settings
 from core.container import service_container
 from services.health import HealthService
 from services.data import DataService

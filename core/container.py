@@ -1,6 +1,6 @@
 import logging
 
-from core.settings import get_settings
+from settings import get_settings
 from services.health import HealthService
 
 log = logging.getLogger(__name__)

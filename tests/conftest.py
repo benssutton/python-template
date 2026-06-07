@@ -1,3 +1,4 @@
+import asyncio
 import threading
 from pathlib import Path
 
@@ -11,25 +12,21 @@ from testcontainers.redis import RedisContainer
 
 from core.container import service_container
 from core.dependencies import get_health_service
-from core.settings import Settings
+from settings import Settings
 from services.health import HealthService
 from persistence.analytics_store.clickhouse.clickhouse_client import ClickHouseClient
-from persistence.stream_store.flight.example_server import ExampleFlightServer
+from example_server import ExampleFlightServer
 from tests.flight_helpers import make_batch
 
 PG_IMAGE = "postgres:18"
 CH_IMAGE = "clickhouse/clickhouse-server:latest"
 REDIS_IMAGE = "redis:7"
 
+# ── Test Setting ────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="session")
 def test_settings():
     return Settings(status="testing", data_dir="./tests/test_data")
-
-
-@pytest.fixture(scope="session")
-def override_health_service(test_settings):
-    yield HealthService(test_settings)
 
 
 # ── ClickHouse fixtures ────────────────────────────────────────────────────────
@@ -53,7 +50,7 @@ async def test_clickhouse_client(clickhouse_container):
     schema_sql = (Path(__file__).parent.parent / "scripts" / "clickhouse-init.sql").read_text()
     async with ClickHouseClient(ch_settings) as client:
         await client.command(schema_sql)
-        with pa_ipc.open_file(Path(__file__).parent / "data" / "items.arrow") as reader:
+        with pa_ipc.open_file(Path(__file__).parent / "test_data" / "clickhouse_seed_data.ipc") as reader:
             arrow_table = reader.read_all()
         await client.insert_arrow("default.items", arrow_table)
         yield client
@@ -89,6 +86,13 @@ def example_flight_server():
     threading.Thread(target=server.serve, daemon=True).start()
     yield server
     server.shutdown()
+
+
+# ── Override Services ─────────────────────────────────────────────────────────
+
+@pytest.fixture(scope="session")
+def override_health_service(test_settings):
+    yield HealthService(test_settings)
 
 
 # ── Async Test Client ─────────────────────────────────────────────────────────
@@ -127,6 +131,25 @@ async def test_client(
     app.dependency_overrides[get_health_service] = lambda: override_health_service
     service_container.register_singleton(HealthService, override_health_service)
 
-    async with create_lifespan(test_settings)(app):
+    # Run the lifespan in a dedicated task so that anyio cancel scopes
+    # (created by mcp.session_manager.run()) are entered and exited in the
+    # same task — anyio forbids cancel scopes crossing task boundaries, which
+    # happens when pytest-asyncio runs fixture setup and teardown as separate
+    # loop.run_until_complete() calls (i.e. separate asyncio Tasks).
+    lifespan_ready = asyncio.Event()
+    lifespan_done = asyncio.Event()
+
+    async def _run_lifespan():
+        async with create_lifespan(test_settings)(app):
+            lifespan_ready.set()
+            await lifespan_done.wait()
+
+    lifespan_task = asyncio.create_task(_run_lifespan())
+    await lifespan_ready.wait()
+
+    try:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
             yield client
+    finally:
+        lifespan_done.set()
+        await lifespan_task

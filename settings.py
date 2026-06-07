@@ -11,9 +11,8 @@ class Settings(BaseSettings):
     app_description: str = "A Python FAST API service with MCP endpoints and Rust extensions, ready for Claude"
 
     status: str = "running"
-    data_dir: str = "./data"
 
-    postgres_url: str = "postgresql://user:password@localhost:5432/appdb"
+    postgres_url: str = ""
     postgres_pool_min_size: int = 2
     postgres_pool_max_size: int = 10
 

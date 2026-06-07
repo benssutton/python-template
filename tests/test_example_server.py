@@ -3,7 +3,7 @@ import threading
 import pytest
 import pyarrow.flight as flight
 
-from persistence.stream_store.flight.example_server import ExampleFlightServer
+from example_server import ExampleFlightServer
 from tests.flight_helpers import make_batch
 
 
@@ -34,7 +34,7 @@ def test_empty_script_rejected():
 
 
 def test_default_script_exercises_lsm_edge_cases():
-    from persistence.stream_store.flight.example_server import _default_script
+    from example_server import _default_script
 
     script = _default_script()
     assert len(script) == 3
@@ -43,7 +43,7 @@ def test_default_script_exercises_lsm_edge_cases():
 
 
 def test_main_uses_env_and_serves(monkeypatch):
-    import persistence.stream_store.flight.example_server as es
+    import example_server as es
 
     served = {}
 

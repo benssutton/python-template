@@ -1,6 +1,6 @@
 import asyncpg
 
-from core.settings import Settings
+from settings import Settings
 
 
 class PostgresClient:

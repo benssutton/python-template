@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from mcp.server.fastmcp import FastMCP
 
 from core.container import service_container
-from core.settings import get_settings, Settings
+from settings import get_settings, Settings
 from persistence.analytics_store.clickhouse.clickhouse_client import ClickHouseClient
 from persistence.cache_store.redis.redis_client import RedisClient
 from persistence.transaction_store.postgres.postgres_client import PostgresClient
@@ -20,6 +20,10 @@ from services.data import DataService
 from services.flight_cache import FlightCacheService
 
 log = logging.getLogger(__name__)
+
+logging.getLogger("asyncio").addFilter(
+    lambda r: not (r.exc_info and isinstance(r.exc_info[1], ConnectionResetError))
+)
 
 settings = get_settings()
 

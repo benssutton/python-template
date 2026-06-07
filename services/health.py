@@ -1,6 +1,6 @@
 import logging
 
-from core.settings import Settings
+from settings import Settings
 from schemas.health import HealthStatusResponse
 
 log = logging.getLogger(__name__)

@@ -1,7 +1,7 @@
 import clickhouse_connect
 from clickhouse_connect.driver.asyncclient import AsyncClient
 
-from core.settings import Settings
+from settings import Settings
 
 
 class ClickHouseClient:

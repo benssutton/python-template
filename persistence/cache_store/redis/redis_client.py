@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 import redis.asyncio as aioredis
 
-from core.settings import Settings
+from settings import Settings
 
 
 class RedisClient:

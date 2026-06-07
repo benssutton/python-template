@@ -4,7 +4,7 @@ import threading
 
 import pyarrow.flight as flight
 
-from core.settings import Settings
+from settings import Settings
 from persistence.stream_store.flight.lsm_store import LSMStore
 from schemas.data import DataRowResponse, DataRowsResponse
 

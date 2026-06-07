@@ -32,7 +32,7 @@ pytest:
     DOCKER_TLS_CERTDIR: ""
   before_script:
     - docker compose up -d --wait
-    - docker build -t perf-scripts ./performance
+    - docker build -t perf-scripts ./tests/performance
   after_script:
     - docker compose down -v
 

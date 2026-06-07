@@ -25,7 +25,8 @@ services:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     volumes:
       - ./scripts/clickhouse-init.sql:/docker-entrypoint-initdb.d/01-schema.sql
-      - ./performance/data/clickhouse-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+      - ./tests/performance/data/clickhouse-seed.sh:/docker-entrypoint-initdb.d/02-seed.sh
+      - ./tests/test_data/clickhouse_seed_data.ipc:/tmp/clickhouse_seed_data.ipc
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
       interval: 5s
@@ -44,7 +45,7 @@ services:
 
   flight:
     build: .
-    command: ["python", "-m", "persistence.stream_store.flight.example_server"]
+    command: ["python", "tests/example_server.py"]
     environment:
       FLIGHT_BIND_HOST: 0.0.0.0
       FLIGHT_PORT: "8815"

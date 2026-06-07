@@ -2,7 +2,7 @@ import asyncio
 
 import pyarrow.flight as flight
 
-from core.settings import Settings
+from settings import Settings
 
 
 class FlightCacheClient:
