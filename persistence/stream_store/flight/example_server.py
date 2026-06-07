@@ -8,6 +8,8 @@ import pyarrow.flight as flight
 class ExampleFlightServer(flight.FlightServerBase):
     def __init__(self, location, script: list[pa.RecordBatch],
                  interval: float, loop: bool = False) -> None:
+        if not script:
+            raise ValueError("script must not be empty")
         super().__init__(location)
         self._script = script
         self._interval = interval
@@ -49,6 +51,7 @@ def main() -> None:
     port = int(os.environ.get("FLIGHT_PORT", "8815"))
     interval = float(os.environ.get("FLIGHT_INTERVAL", "0.2"))
     location = flight.Location.for_grpc_tcp(host, port)
+    # loop=True: continuous stream for docker-compose; pytest uses loop=False
     server = ExampleFlightServer(location, _default_script(), interval=interval, loop=True)
     server.serve()
 
