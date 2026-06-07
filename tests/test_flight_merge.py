@@ -3,7 +3,7 @@ import polars as pl
 from persistence.stream_store.flight.lsm_store import _merge_to_rows
 
 
-def _frame(rows):
+def _frame(rows: list[dict]) -> pl.DataFrame:
     return pl.DataFrame(rows)
 
 
@@ -44,6 +44,10 @@ def test_merge_composite_key_extension():
     ])
     rows, total = _merge_to_rows((f,), ["id", "version"], None)
     assert total == 2  # different composite keys -> both survive
+    assert rows == [
+        {"id": 1, "name": "a", "value": "v1"},
+        {"id": 1, "name": "a", "value": "v2"},
+    ]
 
 
 def test_merge_empty():
