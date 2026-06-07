@@ -40,10 +40,11 @@ class FlightCacheService:
                 log.exception("ingest failed; skipping batch")
 
     async def stop(self) -> None:
+        if self._thread is None:  # start() was never called — nothing to stop
+            return
         self._stop.set()
         self._client.close()  # unblocks a pending read_chunk
-        if self._thread is not None:
-            await asyncio.to_thread(self._thread.join)
+        await asyncio.to_thread(self._thread.join)
 
     async def get_data(self, limit: int) -> DataRowsResponse:
         rows, total = await asyncio.to_thread(self._store.query, limit)

@@ -69,8 +69,15 @@ async def test_service_ingests_and_serves():
                     break
                 await asyncio.sleep(0.05)
             await svc.stop()
+            assert not svc._thread.is_alive()
         assert resp.total == 2
         values = {r.id: r.value for r in resp.rows}
         assert values[1] == "new"
     finally:
         server.shutdown()
+
+
+async def test_stop_without_start_is_noop():
+    store = LSMStore(flush_rows=100, compaction_runs=100)
+    svc = FlightCacheService(_FakeClient(_FakeReader([])), store, Settings())
+    await svc.stop()  # must not raise
