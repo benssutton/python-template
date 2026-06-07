@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, Query
 
-from core.dependencies import DataServiceDep
+from core.dependencies import DataServiceDep, FlightCacheServiceDep
 from schemas.data import DataRowsResponse
 
 log = logging.getLogger(__name__)
@@ -22,3 +22,11 @@ async def get_data(
     limit: int = Query(default=10, ge=1, le=100),
 ):
     return await data_service.get_data(limit=limit)
+
+
+@router.get("/cache", response_model=DataRowsResponse)
+async def get_cached_data(
+    flight_cache_service: FlightCacheServiceDep,
+    limit: int = Query(default=10, ge=1, le=100),
+):
+    return await flight_cache_service.get_data(limit=limit)
