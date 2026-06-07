@@ -1,6 +1,8 @@
+import threading
 from pathlib import Path
 
 import pytest
+import pyarrow.flight as flight
 import pyarrow.ipc as pa_ipc
 from httpx import AsyncClient, ASGITransport
 from testcontainers.clickhouse import ClickHouseContainer
@@ -12,6 +14,8 @@ from core.dependencies import get_health_service
 from core.settings import Settings
 from services.health import HealthService
 from persistence.analytics_store.clickhouse.clickhouse_client import ClickHouseClient
+from persistence.stream_store.flight.example_server import ExampleFlightServer
+from tests.flight_helpers import make_batch
 
 PG_IMAGE = "postgres:18"
 CH_IMAGE = "clickhouse/clickhouse-server:latest"
@@ -71,6 +75,22 @@ def redis_container():
         yield r
 
 
+# ── Flight fixtures ─────────────────────────────────────────────────────────
+
+@pytest.fixture(scope="session")
+def example_flight_server():
+    script = [
+        make_batch([(1, "a", "old", "upsert"), (2, "b", "y", "upsert"), (3, "c", "z", "upsert")]),
+        make_batch([(1, "a", "new", "upsert")]),
+        make_batch([(2, "b", "y", "delete")]),
+    ]
+    location = flight.Location.for_grpc_tcp("localhost", 0)
+    server = ExampleFlightServer(location, script, interval=0.02, loop=False)
+    threading.Thread(target=server.serve, daemon=True).start()
+    yield server
+    server.shutdown()
+
+
 # ── Async Test Client ─────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="session")
@@ -79,6 +99,7 @@ async def test_client(
     clickhouse_container,
     test_clickhouse_client,
     redis_container,
+    example_flight_server,
     override_health_service,
 ):
     from main import app, create_lifespan
@@ -96,6 +117,11 @@ async def test_client(
         clickhouse_password=clickhouse_container.password or "",
         clickhouse_database="default",
         redis_url=f"redis://localhost:{redis_port}/0",
+        flight_host="localhost",
+        flight_port=example_flight_server.port,
+        flight_ticket="items",
+        lsm_flush_rows=2,
+        lsm_compaction_runs=2,
     )
 
     app.dependency_overrides[get_health_service] = lambda: override_health_service
