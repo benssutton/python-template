@@ -20,7 +20,7 @@ from tests.flight_helpers import make_batch
 
 PG_IMAGE = "postgres:18"
 CH_IMAGE = "clickhouse/clickhouse-server:latest"
-REDIS_IMAGE = "redis:7"
+REDIS_IMAGE = "redis/redis-stack-server:latest"
 
 # ── Test Setting ────────────────────────────────────────────────────────
 

@@ -34,7 +34,7 @@ services:
       retries: 10
 
   redis:
-    image: redis:7
+    image: redis/redis-stack-server:latest
     ports:
       - "6379:6379"
     healthcheck:
