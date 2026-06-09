@@ -51,7 +51,10 @@ async def test_post_cache_with_list_value(test_client: AsyncClient):
     payload = {"key": "json_list", "value": [1, "two", {"three": 3}]}
     response = await test_client.post("/cache/", json=payload)
     assert response.status_code == 201
-    assert response.json()["value"] == [1, "two", {"three": 3}]
+    body = response.json()
+    assert body["key"] == "json_list"
+    assert body["value"] == [1, "two", {"three": 3}]
+    assert body["ttl_seconds"] is None
 
     get_response = await test_client.get("/cache/json_list")
     assert get_response.status_code == 200
