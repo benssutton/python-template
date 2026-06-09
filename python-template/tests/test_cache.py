@@ -33,3 +33,27 @@ async def test_get_cache_missing_key_returns_404(test_client: AsyncClient):
     assert response.status_code == 404
 
 
+async def test_post_cache_with_dict_value(test_client: AsyncClient):
+    payload = {"key": "json_dict", "value": {"nested": "object", "count": 42}}
+    response = await test_client.post("/cache/", json=payload)
+    assert response.status_code == 201
+    body = response.json()
+    assert body["key"] == "json_dict"
+    assert body["value"] == {"nested": "object", "count": 42}
+    assert body["ttl_seconds"] is None
+
+    get_response = await test_client.get("/cache/json_dict")
+    assert get_response.status_code == 200
+    assert get_response.json()["value"] == {"nested": "object", "count": 42}
+
+
+async def test_post_cache_with_list_value(test_client: AsyncClient):
+    payload = {"key": "json_list", "value": [1, "two", {"three": 3}]}
+    response = await test_client.post("/cache/", json=payload)
+    assert response.status_code == 201
+    assert response.json()["value"] == [1, "two", {"three": 3}]
+
+    get_response = await test_client.get("/cache/json_list")
+    assert get_response.status_code == 200
+    assert get_response.json()["value"] == [1, "two", {"three": 3}]
+
