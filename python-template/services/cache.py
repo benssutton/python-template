@@ -10,9 +10,11 @@ class CacheService:
         self._client = client
 
     async def set(self, key: str, value: Any, ttl_seconds: int | None) -> CacheEntry:
-        await self._client.json().set(key, "$", value)
-        if ttl_seconds is not None:
-            await self._client.expire(key, ttl_seconds)
+        async with self._client.pipeline(transaction=True) as pipe:
+            pipe.json().set(key, "$", value)
+            if ttl_seconds is not None:
+                pipe.expire(key, ttl_seconds)
+            await pipe.execute()
         return CacheEntry(key=key, value=value, ttl_seconds=ttl_seconds)
 
     async def get(self, key: str) -> CacheEntry | None:
