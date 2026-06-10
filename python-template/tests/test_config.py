@@ -1,5 +1,14 @@
 from httpx import AsyncClient
 
+from persistence.transaction_store.postgres.postgres_client import PostgresClient
+from settings import Settings
+
+
+async def test_postgres_client_aexit_without_pool_is_noop():
+    """__aexit__ must not raise when called on an instance that never entered."""
+    client = PostgresClient(Settings())
+    await client.__aexit__(None, None, None)
+
 
 async def test_get_config_returns_empty_list(test_client: AsyncClient):
     response = await test_client.get("/config/")

@@ -1,5 +1,14 @@
 from httpx import AsyncClient
 
+from persistence.cache_store.redis.redis_client import RedisClient
+from settings import Settings
+
+
+async def test_redis_client_aexit_without_client_is_noop():
+    """__aexit__ must not raise when called on an instance that never entered."""
+    client = RedisClient(Settings())
+    await client.__aexit__(None, None, None)
+
 
 async def test_post_cache_without_ttl(test_client: AsyncClient):
     response = await test_client.post("/cache/", json={"key": "foo", "value": "bar"})
