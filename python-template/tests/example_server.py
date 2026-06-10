@@ -30,19 +30,21 @@ class ExampleFlightServer(flight.FlightServerBase):
         return flight.GeneratorStream(schema, gen())
 
 
-def _default_script() -> list[pa.RecordBatch]:
-    def batch(rows):
-        return pa.record_batch({
-            "id": pa.array([r[0] for r in rows], pa.int64()),
-            "name": pa.array([r[1] for r in rows], pa.string()),
-            "value": pa.array([r[2] for r in rows], pa.string()),
-            "op": pa.array([r[3] for r in rows], pa.string()),
-        })
+def make_batch(rows: list[tuple[int, str, str, str]]) -> pa.RecordBatch:
+    """rows: list of (id, name, value, op)."""
+    return pa.record_batch({
+        "id": pa.array([r[0] for r in rows], pa.int64()),
+        "name": pa.array([r[1] for r in rows], pa.string()),
+        "value": pa.array([r[2] for r in rows], pa.string()),
+        "op": pa.array([r[3] for r in rows], pa.string()),
+    })
 
+
+def _default_script() -> list[pa.RecordBatch]:
     return [
-        batch([(1, "a", "old", "upsert"), (2, "b", "y", "upsert"), (3, "c", "z", "upsert")]),
-        batch([(1, "a", "new", "upsert")]),
-        batch([(2, "b", "y", "delete")]),
+        make_batch([(1, "a", "old", "upsert"), (2, "b", "y", "upsert"), (3, "c", "z", "upsert")]),
+        make_batch([(1, "a", "new", "upsert")]),
+        make_batch([(2, "b", "y", "delete")]),
     ]
 
 

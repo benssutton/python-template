@@ -27,7 +27,7 @@ settings.py                     Pydantic BaseSettings config; env vars override 
   scripts/                      SQL DDL for both Postgres and ClickHouse (run at startup / via docker-compose)
   services/                     All business logic (health, data, config)
   tests/                        Pytest integration tests + k6 performance tests
-    data/                       Binary test fixtures (items.arrow)
+    test_data/                  Binary test fixtures (clickhouse_seed_data.ipc) + fixture generator notebook
     example_server.py           Reusable dummy Flight server used by tests and docker-compose
     performance/                k6 performance test scripts
       lib/                      Shared k6 check helpers and SLO threshold presets
@@ -79,7 +79,7 @@ settings.py                     Pydantic BaseSettings config; env vars override 
 - Application behaviour is overridden via FastAPI dependency injection (no monkeypatching).
 - Each test session starts fresh testcontainer instances for Postgres and ClickHouse; containers are torn down at session end.
 - Postgres schema is created from `scripts/postgres-init.sql` via the `postgres_pool` fixture.
-- ClickHouse schema is created from `scripts/clickhouse-init.sql` (single source of truth shared with docker-compose). Seed data is loaded from `tests/data/items.arrow` via `client.insert_arrow()`.
+- ClickHouse schema is created from `scripts/clickhouse-init.sql` (single source of truth shared with docker-compose). Seed data is loaded from `tests/test_data/clickhouse_seed_data.ipc` via `client.insert_arrow()`.
 
 **Performance Tests**
 - `tests/performance/lib/checks.js` -- shared k6 check helpers (`checkStatus200`, `checkDataCount`, `checkDataRows`).

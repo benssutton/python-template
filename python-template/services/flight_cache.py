@@ -20,6 +20,13 @@ class FlightCacheService:
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
+    async def __aenter__(self) -> "FlightCacheService":
+        await self.start()
+        return self
+
+    async def __aexit__(self, *_: object) -> None:
+        await self.stop()
+
     async def start(self) -> None:
         self._thread = threading.Thread(target=self._consume_loop, daemon=True)
         self._thread.start()

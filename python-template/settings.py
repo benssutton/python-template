@@ -12,6 +12,14 @@ class Settings(BaseSettings):
 
     status: str = "running"
 
+    server_host: str = "0.0.0.0"
+    server_port: int = 443
+    ssl_keyfile: str = "./certs/key.pem"
+    ssl_certfile: str = "./certs/cert.pem"
+
+    mcp_name: str = "python-template"
+    mcp_instructions: str = "Tools for this template application."
+
     postgres_url: str = ""
     postgres_pool_min_size: int = 2
     postgres_pool_max_size: int = 10
@@ -29,6 +37,7 @@ class Settings(BaseSettings):
     flight_ticket: str = "items"
     lsm_flush_rows: int = 1000       # memtable -> run threshold
     lsm_compaction_runs: int = 4     # run count -> compaction threshold
+    lsm_key_columns: list[str] = ["id"]  # merge partition key; single extension point
 
 
 @lru_cache(maxsize=1)
