@@ -1,0 +1,35 @@
+# Fast API Service
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+httpx
+
+# MCP
+mcp
+
+# Postgres
+asyncpg
+
+# ClickHouse
+clickhouse-connect[async]
+
+# Redis
+redis[hiredis]
+
+# Solace
+solace-pubsubplus
+
+# Data
+polars
+pyarrow
+rapidfuzz
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov
+testcontainers[postgresql]
+testcontainers[clickhouse]
+testcontainers[redis]
