@@ -75,7 +75,7 @@ services:
 
   flight:
     build: .
-    command: ["python", "tests/example_server.py"]
+    command: ["python", "tests/publishers/flight_server.py"]
     environment:
       FLIGHT_BIND_HOST: 0.0.0.0
       FLIGHT_PORT: "8815"
@@ -106,6 +106,8 @@ services:
       SOLACE_USERNAME: admin
       SOLACE_PASSWORD: admin
       SOLACE_TOPIC: "ingest/batches"
+    # When running Solace transport: INGEST_TRANSPORT=solace docker compose up solace solace-publisher app
+    # (This avoids waiting for the flight service when not needed)
     depends_on:
       db:
         condition: service_healthy

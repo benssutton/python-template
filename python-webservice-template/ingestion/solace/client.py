@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import queue
 from typing import Iterator
 
@@ -10,6 +11,8 @@ from solace.messaging.receiver.message_receiver import MessageHandler, InboundMe
 from solace.messaging.resources.topic_subscription import TopicSubscription
 
 from settings import Settings
+
+log = logging.getLogger(__name__)
 
 
 class _BatchHandler(MessageHandler):
@@ -23,7 +26,7 @@ class _BatchHandler(MessageHandler):
             for batch in reader:
                 self._queue.put(batch)
         except Exception:
-            pass  # malformed message silently dropped
+            log.warning("Solace: malformed IPC message dropped", exc_info=True)
 
 
 class SolaceBatchConsumer:

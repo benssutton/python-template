@@ -25,13 +25,10 @@ class FlightBatchConsumer:
     def batches(self) -> Iterator[pa.RecordBatch]:
         ticket = flight.Ticket(self._settings.flight_ticket.encode())
         reader = self._client.do_get(ticket)
-        while True:
-            try:
-                yield reader.read_chunk().data
-            except StopIteration:
-                break
+        for chunk in reader:
+            yield chunk.data
 
     def close(self) -> None:
-        if self._client is not None:
-            self._client.close()
-            self._client = None
+        client, self._client = self._client, None
+        if client is not None:
+            client.close()

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -40,7 +41,7 @@ class Settings(BaseSettings):
     lsm_key_columns: list[str] = ["id"]  # merge partition key; single extension point
 
     # Ingestion transport selector
-    ingest_transport: str = "flight"        # "flight" | "solace"
+    ingest_transport: Literal["flight", "solace"] = "flight"
 
     # Solace — only resolved when ingest_transport="solace"
     solace_host: str = "localhost"
