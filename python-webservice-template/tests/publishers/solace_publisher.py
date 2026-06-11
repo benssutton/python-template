@@ -28,7 +28,10 @@ class SolacePublisher:
         buf = pa.BufferOutputStream()
         with pa_ipc.new_stream(buf, batch.schema) as writer:
             writer.write_batch(batch)
-        payload = buf.getvalue().to_pybytes()
+        # The Solace SDK's build() accepts bytearray for a binary payload;
+        # plain `bytes` matches none of its payload-type branches and fails
+        # with "Failed to create attachment for the message".
+        payload = bytearray(buf.getvalue().to_pybytes())
         message = self._service.message_builder().build(payload)
         self._publisher.publish(message=message, destination=Topic.of(self._topic))
 

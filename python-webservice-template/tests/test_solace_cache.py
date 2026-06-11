@@ -1,10 +1,11 @@
 import asyncio
 import time
+import urllib.error
+import urllib.request
 
 import pytest
 from httpx import AsyncClient, ASGITransport
 from testcontainers.core.container import DockerContainer
-from testcontainers.core.waiting_utils import wait_for_logs
 
 from core.container import service_container
 from core.dependencies import get_health_service
@@ -39,7 +40,7 @@ def solace_container():
     # GETTING_STARTED.md): a ~2 GiB WSL2 VM will OOM-kill the broker.
     container = (
         DockerContainer(SOLACE_IMAGE)
-        .with_exposed_ports(55555, 8080)
+        .with_exposed_ports(55555, 8080, 5550)
         .with_env("username_admin_globalaccesslevel", "admin")
         .with_env("username_admin_password", "admin")
         .with_env("system_scaling_maxconnectioncount", "100")
@@ -52,8 +53,33 @@ def solace_container():
         )
     )
     with container:
-        wait_for_logs(container, "Primary Virtual Router Up", timeout=180)
+        # Readiness is NOT logged to the container's stdout (the broker writes
+        # "Primary Virtual Router is now active" to its internal system.log, not
+        # stdout), so wait_for_logs can never match. Poll the guaranteed-messaging
+        # health-check port instead — it returns 200 once the broker is active.
+        _wait_for_solace_ready(container, timeout=180)
         yield container
+
+
+def _wait_for_solace_ready(container: DockerContainer, timeout: float) -> None:
+    host = container.get_container_host_ip()
+    port = int(container.get_exposed_port(5550))
+    url = f"http://{host}:{port}/health-check/guaranteed-active"
+    deadline = time.monotonic() + timeout
+    last_err: Exception | None = None
+    while time.monotonic() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                if resp.status == 200:
+                    return
+        except urllib.error.HTTPError as exc:
+            last_err = exc
+            if exc.code == 200:
+                return
+        except (urllib.error.URLError, ConnectionError, OSError) as exc:
+            last_err = exc  # broker not accepting connections yet
+        time.sleep(2)
+    raise TimeoutError(f"Solace health-check not ready within {timeout}s: {last_err}")
 
 
 @pytest.fixture(scope="module")
@@ -106,7 +132,6 @@ async def test_client_solace(
     lifespan_task = asyncio.create_task(_run_lifespan())
     await lifespan_ready.wait()
 
-    # Publish test batches AFTER the app has subscribed to the topic
     publisher = SolacePublisher(
         host="localhost",
         port=solace_smf_port,
@@ -115,15 +140,25 @@ async def test_client_solace(
         password="admin",
         topic="ingest/batches",
     )
-    try:
-        publisher.publish_batch(BATCH_1)
-        publisher.publish_batch(BATCH_2)
-        publisher.publish_batch(BATCH_3)
-    finally:
-        publisher.close()
 
     try:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
+            # Solace Direct messaging has NO retroactive delivery: a batch
+            # published before the app's subscription is active on the broker is
+            # silently dropped. lifespan_ready fires when the ingest thread is
+            # spawned, which races the consumer's receiver.start(). Re-publish
+            # the same ordered batches until the merged result appears — this is
+            # idempotent (newest-wins always converges to total=2).
+            deadline = time.monotonic() + 90
+            while time.monotonic() < deadline:
+                publisher.publish_batch(BATCH_1)
+                publisher.publish_batch(BATCH_2)
+                publisher.publish_batch(BATCH_3)
+                await asyncio.sleep(1)
+                body = (await client.get("/data/cache?limit=100")).json()
+                if body["total"] == 2:
+                    break
+            publisher.close()
             yield client
     finally:
         lifespan_done.set()

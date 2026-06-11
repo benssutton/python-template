@@ -63,7 +63,7 @@ class SolaceBatchConsumer:
         self._receiver = (
             self._service
             .create_direct_message_receiver_builder()
-            .with_subscriptions(TopicSubscription.of(self._settings.solace_topic))
+            .with_subscriptions([TopicSubscription.of(self._settings.solace_topic)])
             .build()
         )
         self._receiver.start()
