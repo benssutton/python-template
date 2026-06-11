@@ -1,5 +1,6 @@
 # Fast API Service
 fastapi
+starlette>=0.20.0
 uvicorn[standard]
 pydantic
 pydantic-settings
@@ -24,7 +25,6 @@ solace-pubsubplus
 # Data
 polars
 pyarrow
-rapidfuzz
 
 # Testing
 pytest
