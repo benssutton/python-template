@@ -29,14 +29,30 @@ BATCH_3 = make_batch([(2, "beta", "v1", "delete")])
 
 @pytest.fixture(scope="module")
 def solace_container():
+    # Solace PubSub+ runs a Power-On-Self-Test (POST) at startup and shuts
+    # down if hard requirements aren't met. Two are relevant here:
+    #   - nofile hard limit must be >= 1048576 (the old 2448:6592 values from
+    #     pre-10.x docs cause a POST ERROR and immediate shutdown).
+    #   - memory: the broker needs ~1 GiB even at the minimum scaling tier.
+    #     system_scaling_maxconnectioncount=100 selects that minimum tier.
+    # The host Docker VM must have enough RAM (see this test's docstring /
+    # GETTING_STARTED.md): a ~2 GiB WSL2 VM will OOM-kill the broker.
     container = (
         DockerContainer(SOLACE_IMAGE)
         .with_exposed_ports(55555, 8080)
         .with_env("username_admin_globalaccesslevel", "admin")
         .with_env("username_admin_password", "admin")
+        .with_env("system_scaling_maxconnectioncount", "100")
+        .with_kwargs(
+            shm_size="1g",
+            ulimits=[
+                {"Name": "core", "Soft": -1, "Hard": -1},
+                {"Name": "nofile", "Soft": 1048576, "Hard": 1048576},
+            ],
+        )
     )
     with container:
-        wait_for_logs(container, "Primary Virtual Router Up", timeout=120)
+        wait_for_logs(container, "Primary Virtual Router Up", timeout=180)
         yield container
 
 

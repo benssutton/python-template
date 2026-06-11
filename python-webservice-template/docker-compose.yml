@@ -51,6 +51,16 @@ services:
     environment:
       username_admin_globalaccesslevel: admin
       username_admin_password: admin
+      # Minimum scaling tier (~1 GiB) so the broker fits a dev-sized Docker VM.
+      system_scaling_maxconnectioncount: "100"
+    # Solace POST hard requirement: nofile hard limit >= 1048576 (older
+    # 2448:6592 values trigger a startup ERROR and immediate shutdown).
+    shm_size: "1g"
+    ulimits:
+      core: -1
+      nofile:
+        soft: 1048576
+        hard: 1048576
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080 || exit 1"]
       interval: 10s
