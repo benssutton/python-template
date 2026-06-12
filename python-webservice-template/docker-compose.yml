@@ -44,6 +44,7 @@ services:
       retries: 10
 
   solace:
+    profiles: [solace]
     image: solace/solace-pubsub-standard:latest
     ports:
       - "55555:55555"
@@ -72,6 +73,7 @@ services:
       start_period: 60s
 
   solace-publisher:
+    profiles: [solace]
     build: .
     command: ["python", "tests/performance/publishers/solace_publisher.py"]
     environment:
@@ -87,6 +89,7 @@ services:
         condition: service_healthy
 
   flight:
+    profiles: [flight]
     build: .
     command: ["python", "tests/publishers/flight_server.py"]
     environment:
@@ -119,8 +122,6 @@ services:
       SOLACE_USERNAME: admin
       SOLACE_PASSWORD: admin
       SOLACE_TOPIC: "ingest/batches"
-    # When running Solace transport: INGEST_TRANSPORT=solace docker compose up solace solace-publisher app
-    # (This avoids waiting for the flight service when not needed)
     depends_on:
       db:
         condition: service_healthy
@@ -128,8 +129,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      flight:
-        condition: service_healthy
+      # Transport services (flight / solace) are not listed here.
+      # The ingest layer retries the transport connection so Compose does not
+      # need to gate app startup on them.
+      # Flight mode:  docker compose --profile flight up
+      # Solace mode:  docker compose --profile solace up
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/status')\""]
       interval: 5s
