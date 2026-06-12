@@ -36,9 +36,9 @@ def _merge_to_rows(frames: tuple[pl.DataFrame, ...],
         return [], 0
     live = winners.filter(pl.col("op") != "delete").sort(key_columns)
     total = live.height
-    if limit is not None:
+    if limit:
         live = live.head(limit)
-    return live.select(["id", "name", "value"]).to_dicts(), total
+    return live.drop([ORDER_COLUMN, "op"]).to_dicts(), total
 
 
 @dataclass(frozen=True)

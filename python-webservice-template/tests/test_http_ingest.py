@@ -126,3 +126,15 @@ async def test_post_ingest_invalid_body_returns_400(test_client_http: AsyncClien
         headers={"Content-Type": "application/vnd.apache.arrow.stream"},
     )
     assert res.status_code == 400
+
+
+async def test_lsm_query_limit_zero_returns_all_rows():
+    """limit=0 must not silently return an empty result."""
+    from persistence.stream_store.lsm_store import LSMStore
+    from tests.publishers.flight_server import make_batch
+
+    store = LSMStore(flush_rows=100, compaction_runs=4)
+    store.ingest(make_batch([(1, "a", "v1", "upsert"), (2, "b", "v2", "upsert")]))
+    rows, total = store.query(limit=0)
+    assert total == 2
+    assert len(rows) == 2
