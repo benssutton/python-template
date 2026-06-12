@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     mcp_name: str = "python-template"
     mcp_instructions: str = "Tools for this template application."
 
-    postgres_url: str = ""
+    postgres_url: str = "postgresql://user:password@localhost:5432/appdb"
     postgres_pool_min_size: int = 2
     postgres_pool_max_size: int = 10
 
