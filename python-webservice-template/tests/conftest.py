@@ -1,32 +1,21 @@
-import asyncio
 import threading
 from pathlib import Path
 
 import pytest
 import pyarrow.flight as flight
 import pyarrow.ipc as pa_ipc
-from httpx import AsyncClient, ASGITransport
 from testcontainers.clickhouse import ClickHouseContainer
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
 
-from core.container import service_container
-from core.dependencies import get_health_service
 from settings import Settings
-from services.health import HealthService
 from persistence.analytics_store.clickhouse.clickhouse_client import ClickHouseClient
+from tests.app_client import lifespan_test_client
 from tests.publishers.flight_server import ExampleFlightServer, make_batch
 
 PG_IMAGE = "postgres:18"
 CH_IMAGE = "clickhouse/clickhouse-server:latest"
 REDIS_IMAGE = "redis/redis-stack-server:latest"
-
-
-# ── Test Settings ──────────────────────────────────────────────────────────
-
-@pytest.fixture(scope="session")
-def test_settings():
-    return Settings(status="testing", data_dir="./tests/test_data")
 
 
 # ── ClickHouse fixtures ────────────────────────────────────────────────────
@@ -98,14 +87,12 @@ def example_flight_server():
     server.shutdown()
 
 
-# ── Override Services ──────────────────────────────────────────────────────
-
-@pytest.fixture(scope="session")
-def override_health_service(test_settings):
-    yield HealthService(test_settings)
-
-
 # ── Async Test Client ──────────────────────────────────────────────────────
+#
+# Each client fixture builds its OWN isolated app via main.create_app — its
+# own DI container, FastMCP instance, and lifespan — so multiple client
+# fixtures (flight / HTTP-ingest / Solace) can coexist in one pytest process
+# without sharing state.
 
 @pytest.fixture(scope="session")
 async def test_client(
@@ -114,15 +101,12 @@ async def test_client(
     test_clickhouse_client,
     redis_container,
     example_flight_server,
-    override_health_service,
 ):
-    from main import app, create_lifespan
-
     pg_port = int(postgres_container.get_exposed_port(5432))
     ch_port = int(clickhouse_container.get_exposed_port(8123))
     redis_port = int(redis_container.get_exposed_port(6379))
 
-    test_settings = Settings(
+    flight_settings = Settings(
         status="testing",
         postgres_url=f"postgresql://{postgres_container.username}:{postgres_container.password}@localhost:{pg_port}/{postgres_container.dbname}",
         clickhouse_host="localhost",
@@ -131,6 +115,7 @@ async def test_client(
         clickhouse_password=clickhouse_container.password or "",
         clickhouse_database="default",
         redis_url=f"redis://localhost:{redis_port}/0",
+        ingest_transport="flight",
         flight_host="localhost",
         flight_port=example_flight_server.port,
         flight_ticket="items",
@@ -138,23 +123,5 @@ async def test_client(
         lsm_compaction_runs=2,
     )
 
-    app.dependency_overrides[get_health_service] = lambda: override_health_service
-    service_container.register_singleton(HealthService, override_health_service)
-
-    lifespan_ready = asyncio.Event()
-    lifespan_done = asyncio.Event()
-
-    async def _run_lifespan():
-        async with create_lifespan(test_settings)(app):
-            lifespan_ready.set()
-            await lifespan_done.wait()
-
-    lifespan_task = asyncio.create_task(_run_lifespan())
-    await lifespan_ready.wait()
-
-    try:
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
-            yield client
-    finally:
-        lifespan_done.set()
-        await lifespan_task
+    async with lifespan_test_client(flight_settings) as client:
+        yield client

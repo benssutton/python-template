@@ -6,12 +6,10 @@ import pyarrow as pa
 import pyarrow.flight as pa_flight
 import pyarrow.ipc as pa_ipc
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import AsyncClient
 
-from core.container import service_container
-from core.dependencies import get_health_service
 from settings import Settings
-from services.health import HealthService
+from tests.app_client import lifespan_test_client
 from tests.publishers.flight_server import ExampleFlightServer, make_batch
 
 pytestmark = pytest.mark.http_ingest
@@ -42,8 +40,6 @@ async def test_client_http(
     redis_container,
     empty_flight_server,
 ):
-    from main import app, create_lifespan
-
     pg_port = int(postgres_container.get_exposed_port(5432))
     ch_port = int(clickhouse_container.get_exposed_port(8123))
     redis_port = int(redis_container.get_exposed_port(6379))
@@ -65,27 +61,10 @@ async def test_client_http(
         lsm_compaction_runs=2,
     )
 
-    override_hs = HealthService(http_settings)
-    app.dependency_overrides[get_health_service] = lambda: override_hs
-    service_container.register_singleton(HealthService, override_hs)
-
-    lifespan_ready = asyncio.Event()
-    lifespan_done = asyncio.Event()
-
-    async def _run_lifespan():
-        async with create_lifespan(http_settings)(app):
-            lifespan_ready.set()
-            await lifespan_done.wait()
-
-    lifespan_task = asyncio.create_task(_run_lifespan())
-    await lifespan_ready.wait()
-
-    try:
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
-            yield client
-    finally:
-        lifespan_done.set()
-        await lifespan_task
+    # Isolated app: own container, own FastMCP, own lifespan — safe to run
+    # in the same process as the session-scoped flight test_client.
+    async with lifespan_test_client(http_settings) as client:
+        yield client
 
 
 async def _poll_for_id(client: AsyncClient, id_: int, timeout: float = 10.0) -> dict:

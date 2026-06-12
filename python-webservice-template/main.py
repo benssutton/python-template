@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from mcp.server.fastmcp import FastMCP
 
-from core.container import service_container
+from core.container import Container
 from settings import get_settings, Settings
 from persistence.analytics_store.clickhouse.clickhouse_client import ClickHouseClient
 from persistence.cache_store.redis.redis_client import RedisClient
@@ -26,39 +26,30 @@ logging.getLogger("asyncio").addFilter(
     lambda r: not (r.exc_info and isinstance(r.exc_info[1], ConnectionResetError))
 )
 
-settings = get_settings()
-
-mcp = FastMCP(
-    name=settings.mcp_name,
-    streamable_http_path="/",
-    instructions=settings.mcp_instructions,
-)
-
-tools.register(mcp)
-
 _CONSUMERS = {
     "flight": FlightBatchConsumer,
     "solace": SolaceBatchConsumer,
 }
 
 
-def create_lifespan(settings: Settings):
+def create_lifespan(settings: Settings, mcp: FastMCP):
     @asynccontextmanager
-    async def lifespan(_: FastAPI):
+    async def lifespan(app: FastAPI):
+        container: Container = app.state.container
         async with AsyncExitStack() as stack:
             pg_pool = await stack.enter_async_context(PostgresClient(settings))
             schema_sql = (Path(__file__).parent / "scripts" / "postgres-init.sql").read_text()
             async with pg_pool.acquire() as conn:
                 await conn.execute(schema_sql)
-            service_container.register_singleton(ConfigService, ConfigService(pg_pool))
+            container.register_singleton(ConfigService, ConfigService(pg_pool))
 
             redis_client = await stack.enter_async_context(RedisClient(settings))
-            service_container.register_singleton(CacheService, CacheService(redis_client))
+            container.register_singleton(CacheService, CacheService(redis_client))
 
             ch_client = await stack.enter_async_context(ClickHouseClient(settings))
             if not await ch_client.ping():
                 raise RuntimeError("ClickHouse startup ping failed")
-            service_container.register_singleton(DataService, DataService(ch_client))
+            container.register_singleton(DataService, DataService(ch_client))
 
             ConsumerClass = _CONSUMERS[settings.ingest_transport]
             consumer = await stack.enter_async_context(ConsumerClass(settings))
@@ -68,43 +59,67 @@ def create_lifespan(settings: Settings):
                 key_columns=settings.lsm_key_columns,
             )
             ingest_svc = await stack.enter_async_context(StreamIngestService(consumer, store))
-            service_container.register_singleton(StreamIngestService, ingest_svc)
+            container.register_singleton(StreamIngestService, ingest_svc)
 
             await stack.enter_async_context(mcp.session_manager.run())
             yield
     return lifespan
 
 
-app = FastAPI(
-    title=settings.app_title,
-    version=settings.app_version,
-    description=settings.app_description,
-    openapi_tags=[health.TAG_METADATA, data.TAG_METADATA, config.TAG_METADATA, cache.TAG_METADATA],
-    lifespan=create_lifespan(settings),
-)
+def create_app(settings: Settings) -> FastAPI:
+    """Build a fully isolated application instance.
 
-app.include_router(health.router, prefix="/health")
-app.include_router(data.router, prefix="/data")
-app.include_router(config.router, prefix="/config")
-app.include_router(cache.router, prefix="/cache")
+    Everything stateful — the DI container, the FastMCP server (whose
+    session manager can only run once per instance), and the lifespan — is
+    created fresh per call, so multiple apps can coexist in one process
+    (e.g. test apps with different transports running in the same pytest
+    session).
+    """
+    container = Container(settings)
 
-app.mount("/mcp", mcp.streamable_http_app())
+    mcp = FastMCP(
+        name=settings.mcp_name,
+        streamable_http_path="/",
+        instructions=settings.mcp_instructions,
+    )
+    tools.register(mcp, container)
+
+    app = FastAPI(
+        title=settings.app_title,
+        version=settings.app_version,
+        description=settings.app_description,
+        openapi_tags=[health.TAG_METADATA, data.TAG_METADATA, config.TAG_METADATA, cache.TAG_METADATA],
+        lifespan=create_lifespan(settings, mcp),
+    )
+    app.state.container = container
+
+    app.include_router(health.router, prefix="/health")
+    app.include_router(data.router, prefix="/data")
+    app.include_router(config.router, prefix="/config")
+    app.include_router(cache.router, prefix="/cache")
+
+    app.mount("/mcp", mcp.streamable_http_app())
+
+    @app.get("/", tags=["API Root Page"])
+    async def get_root():
+        return {
+            "title": settings.app_title,
+            "version": settings.app_version,
+            "description": settings.app_description,
+            "docs": "/docs",
+            "MCP": "/mcp"
+        }
+
+    return app
 
 
-@app.get("/", tags=["API Root Page"])
-async def get_root():
-    return {
-        "title": settings.app_title,
-        "version": settings.app_version,
-        "description": settings.app_description,
-        "docs": "/docs",
-        "MCP": "/mcp"
-    }
+app = create_app(get_settings())
 
 
 if __name__ == "__main__":
     log.info("Starting the application from main.py")
     import uvicorn
+    settings = get_settings()
     uvicorn.run(
         app,
         host=settings.server_host,

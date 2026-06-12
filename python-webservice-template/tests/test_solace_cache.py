@@ -4,13 +4,11 @@ import urllib.error
 import urllib.request
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import AsyncClient
 from testcontainers.core.container import DockerContainer
 
-from core.container import service_container
-from core.dependencies import get_health_service
 from settings import Settings
-from services.health import HealthService
+from tests.app_client import lifespan_test_client
 from tests.publishers.flight_server import make_batch
 from tests.publishers.solace_publisher import SolacePublisher
 
@@ -90,8 +88,6 @@ async def test_client_solace(
     redis_container,
     solace_container,
 ):
-    from main import app, create_lifespan
-
     pg_port = int(postgres_container.get_exposed_port(5432))
     ch_port = int(clickhouse_container.get_exposed_port(8123))
     redis_port = int(redis_container.get_exposed_port(6379))
@@ -117,38 +113,24 @@ async def test_client_solace(
         lsm_compaction_runs=2,
     )
 
-    override_hs = HealthService(solace_settings)
-    app.dependency_overrides[get_health_service] = lambda: override_hs
-    service_container.register_singleton(HealthService, override_hs)
-
-    lifespan_ready = asyncio.Event()
-    lifespan_done = asyncio.Event()
-
-    async def _run_lifespan():
-        async with create_lifespan(solace_settings)(app):
-            lifespan_ready.set()
-            await lifespan_done.wait()
-
-    lifespan_task = asyncio.create_task(_run_lifespan())
-    await lifespan_ready.wait()
-
-    publisher = SolacePublisher(
-        host="localhost",
-        port=solace_smf_port,
-        vpn="default",
-        username="admin",
-        password="admin",
-        topic="ingest/batches",
-    )
-
-    try:
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost:8000") as client:
+    # Isolated app: own container, own FastMCP, own lifespan — safe to run
+    # in the same process as the session-scoped flight test_client.
+    async with lifespan_test_client(solace_settings) as client:
+        publisher = SolacePublisher(
+            host="localhost",
+            port=solace_smf_port,
+            vpn="default",
+            username="admin",
+            password="admin",
+            topic="ingest/batches",
+        )
+        try:
             # Solace Direct messaging has NO retroactive delivery: a batch
             # published before the app's subscription is active on the broker is
-            # silently dropped. lifespan_ready fires when the ingest thread is
-            # spawned, which races the consumer's receiver.start(). Re-publish
-            # the same ordered batches until the merged result appears — this is
-            # idempotent (newest-wins always converges to total=2).
+            # silently dropped. The lifespan signals readiness when the ingest
+            # thread is spawned, which races the consumer's receiver.start().
+            # Re-publish the same ordered batches until the merged result
+            # appears — idempotent (newest-wins always converges to total=2).
             deadline = time.monotonic() + 90
             while time.monotonic() < deadline:
                 publisher.publish_batch(BATCH_1)
@@ -158,11 +140,9 @@ async def test_client_solace(
                 body = (await client.get("/data/cache?limit=100")).json()
                 if body["total"] == 2:
                     break
+        finally:
             publisher.close()
-            yield client
-    finally:
-        lifespan_done.set()
-        await lifespan_task
+        yield client
 
 
 async def _poll_cache(client: AsyncClient, expected_total: int, timeout: float = 30.0):
