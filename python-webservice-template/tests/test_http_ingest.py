@@ -67,15 +67,21 @@ async def test_client_http(
         yield client
 
 
-async def _poll_for_id(client: AsyncClient, id_: int, timeout: float = 10.0) -> dict:
+async def _poll_for_value(client: AsyncClient, id_: int, expected_value: str, timeout: float = 10.0) -> dict:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         body = (await client.get("/data/cache?limit=100")).json()
         rows_by_id = {r["id"]: r for r in body["rows"]}
-        if id_ in rows_by_id:
+        if id_ in rows_by_id and rows_by_id[id_]["value"] == expected_value:
             return rows_by_id[id_]
         await asyncio.sleep(0.05)
-    raise AssertionError(f"id={id_} never appeared in cache")
+    raise AssertionError(f"id={id_} with value={expected_value!r} never appeared in cache")
+
+
+async def test_lsm_cache_empty_before_ingest(test_client_http: AsyncClient):
+    body = (await test_client_http.get("/data/cache?limit=100")).json()
+    assert body["total"] == 0
+    assert body["rows"] == []
 
 
 async def test_post_ingest_upsert_appears_in_cache(test_client_http: AsyncClient):
@@ -86,8 +92,7 @@ async def test_post_ingest_upsert_appears_in_cache(test_client_http: AsyncClient
         headers={"Content-Type": "application/vnd.apache.arrow.stream"},
     )
     assert res.status_code == 202
-    row = await _poll_for_id(test_client_http, 100)
-    assert row["value"] == "v1"
+    row = await _poll_for_value(test_client_http, 100, "v1")
 
 
 async def test_post_ingest_newest_wins(test_client_http: AsyncClient):
@@ -98,8 +103,7 @@ async def test_post_ingest_newest_wins(test_client_http: AsyncClient):
         headers={"Content-Type": "application/vnd.apache.arrow.stream"},
     )
     assert res.status_code == 202
-    row = await _poll_for_id(test_client_http, 100)
-    assert row["value"] == "v2"
+    row = await _poll_for_value(test_client_http, 100, "v2")
 
 
 async def test_post_ingest_tombstone(test_client_http: AsyncClient):
