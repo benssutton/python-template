@@ -89,7 +89,6 @@ services:
         condition: service_healthy
 
   flight:
-    profiles: [flight]
     build: .
     command: ["python", "tests/publishers/flight_server.py"]
     environment:
@@ -129,11 +128,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      # Transport services (flight / solace) are not listed here.
-      # The ingest layer retries the transport connection so Compose does not
-      # need to gate app startup on them.
-      # Flight mode:  docker compose --profile flight up
-      # Solace mode:  docker compose --profile solace up
+      # Transport services are not listed here — the ingest layer retries
+      # the transport connection so Compose does not gate app startup on them.
+      # Default (Flight):  docker compose up
+      # Solace mode:       docker compose --profile solace up
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/status')\""]
       interval: 5s
