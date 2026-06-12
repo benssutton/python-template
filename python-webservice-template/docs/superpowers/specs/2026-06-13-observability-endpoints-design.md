@@ -138,7 +138,7 @@ This catches the case where the ingest thread is blocked on `queue.get()` and no
 - On each yielded batch: update `self._last_batch_at = datetime.now(UTC)` and `self._rows_total += batch.num_rows`.
 - Existing exception→backoff→SIGTERM-after-`_INGEST_MAX_FAILURES` logic stays unchanged.
 - New `async def health_check(self) -> IngestHealth` returns `transport`, `connection_state()`, `thread_alive`, `last_batch_at`, `seconds_since_last_batch`, `rows_ingested_total`, and `stale` (true when `seconds_since_last_batch > ingest_staleness_threshold_seconds`, if configured).
-- **Optional disconnect watchdog** (`ingest_max_disconnect_seconds`, default `None` = off): one small asyncio task started in `__aenter__`, wakes periodically; if `connection_state()` has been non-`CONNECTED` continuously longer than the threshold, logs `critical` and `os.kill(getpid(), SIGTERM)`. This is the streaming equivalent of the CLAUDE.md "shut down after repeated failure" rule. Primary recovery remains readiness-503 + auto-reconnect; the watchdog is a last resort.
+- **Disconnect watchdog** (`ingest_max_disconnect_seconds`, default `60.0`; set `None` to disable): one small asyncio task started in `__aenter__`, wakes periodically; if `connection_state()` has been non-`CONNECTED` continuously longer than the threshold, logs `critical` and `os.kill(getpid(), SIGTERM)`. This is the streaming equivalent of the CLAUDE.md "shut down after repeated failure" rule. Primary recovery is readiness-503 + auto-reconnect within the window; the watchdog is the last resort when the transport never comes back. The 60s default gives auto-reconnect a full minute to recover before the pod shuts down and is restarted by the orchestrator.
 
 ### 2.3 Per-dependency health checks (owned by each service)
 Each service that holds a client gains `async def health_check(self) -> ProbeResult`:
@@ -166,7 +166,7 @@ Each service that holds a client gains `async def health_check(self) -> ProbeRes
 health_check_timeout_seconds: float = 2.0                 # per-dependency ping timeout
 ingest_staleness_threshold_seconds: float | None = None   # None = staleness never reported as stale
 ingest_stale_fails_readiness: bool = False                # stale -> 503 only if True
-ingest_max_disconnect_seconds: float | None = None        # None = disconnect watchdog disabled
+ingest_max_disconnect_seconds: float | None = 60.0        # non-CONNECTED longer than this -> SIGTERM; None = disabled
 metrics_enabled: bool = True
 ```
 
@@ -219,6 +219,7 @@ Run with `docker compose --profile observability up`. A raw Prometheus scrape sn
 - **`test_status_structure`** — uptime > 0, deps present, `system.process.memory_rss_bytes > 0`; after an HTTP ingest, `last_batch_at` set and `rows_ingested > 0`.
 - **`test_metrics_endpoint`** — 200, correct content-type, contains `http_request_duration_seconds`, `dependency_up`, `ingest_connection_state`, `ingest_seconds_since_last_batch`, psutil gauges; `http_requests_total` increments after a call.
 - **`test_system_metrics_unit`** — `collect_system_snapshot()` returns plausible values, no container.
+- **`test_disconnect_watchdog_triggers_shutdown`** (unit, no broker, no mocks) — a real fake `BatchConsumer` whose `connection_state()` returns `DOWN`; `StreamIngestService` with a tiny `ingest_max_disconnect_seconds`. The test installs a `SIGTERM` handler that sets an `asyncio.Event`, then asserts the event fires within the window (proving the watchdog requested shutdown). Restores the original handler afterward.
 
 ### 3.5 New dependencies
 - `psutil`
