@@ -5,6 +5,7 @@ import pytest
 
 from ingestion.base import ConnectionState
 from ingestion.flight.client import FlightBatchConsumer
+from ingestion.solace.client import SolaceBatchConsumer, _StateListener
 from settings import Settings
 from tests.publishers.flight_server import ExampleFlightServer, make_batch
 
@@ -32,3 +33,16 @@ async def test_flight_consumer_unexpected_stream_end_sets_reconnecting():
         assert consumer.connection_state() == ConnectionState.DOWN
     finally:
         server.shutdown()
+
+
+def test_solace_consumer_state_transitions_via_listeners():
+    consumer = SolaceBatchConsumer(Settings())
+    assert consumer.connection_state() == ConnectionState.DOWN
+
+    listener = _StateListener(consumer)
+    listener.on_reconnecting(None)
+    assert consumer.connection_state() == ConnectionState.RECONNECTING
+    listener.on_reconnected(None)
+    assert consumer.connection_state() == ConnectionState.CONNECTED
+    listener.on_service_interrupted(None)
+    assert consumer.connection_state() == ConnectionState.DOWN
