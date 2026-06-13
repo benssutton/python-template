@@ -46,6 +46,22 @@ class ExampleFlightServer(flight.FlightServerBase):
         return flight.GeneratorStream(self._schema, gen())
 
 
+class IdleFlightServer(flight.FlightServerBase):
+    """Accepts a do_get and keeps the stream open forever without sending.
+
+    Used to exercise the 'connected but no data' (idle) ingest state.
+    """
+
+    def do_get(self, context, ticket):
+        def gen():
+            while True:
+                time.sleep(0.1)
+                if False:        # never yields; keeps the stream open
+                    yield
+
+        return flight.GeneratorStream(RECORD_SCHEMA, gen())
+
+
 def _default_script() -> list[pa.RecordBatch]:
     return [
         make_batch([(1, "a", "old", "upsert"), (2, "b", "y", "upsert"), (3, "c", "z", "upsert")]),
