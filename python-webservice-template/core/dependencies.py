@@ -50,3 +50,13 @@ DataServiceDep = Annotated[DataService, Depends(get_data_service)]
 ConfigServiceDep = Annotated[ConfigService, Depends(get_config_service)]
 CacheServiceDep = Annotated[CacheService, Depends(get_cache_service)]
 StreamIngestServiceDep = Annotated[StreamIngestService, Depends(get_stream_ingest_service)]
+
+
+from services.metrics import MetricsService
+
+
+def get_metrics_service(container: ContainerDep) -> MetricsService:
+    return container.get(MetricsService)
+
+
+MetricsServiceDep = Annotated[MetricsService, Depends(get_metrics_service)]

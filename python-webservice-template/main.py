@@ -14,11 +14,12 @@ from persistence.transaction_store.postgres.postgres_client import PostgresClien
 from persistence.stream_store.lsm_store import LSMStore
 from ingestion.flight.client import FlightBatchConsumer
 from ingestion.solace.client import SolaceBatchConsumer
-from routers import health, data, config, cache
+from routers import health, data, config, cache, metrics
 from mcp_routers import tools
 from services.cache import CacheService
 from services.config import ConfigService
 from services.data import DataService
+from services.metrics import MetricsService
 from services.stream_ingest import StreamIngestService
 
 log = logging.getLogger(__name__)
@@ -103,6 +104,12 @@ def create_app(settings: Settings) -> FastAPI:
     app.include_router(data.router, prefix="/data")
     app.include_router(config.router, prefix="/config")
     app.include_router(cache.router, prefix="/cache")
+
+    if settings.metrics_enabled:
+        metrics_service = MetricsService(settings)
+        metrics_service.instrument(app)
+        container.register_singleton(MetricsService, metrics_service)
+        app.include_router(metrics.router)
 
     app.mount("/mcp", mcp.streamable_http_app())
 
