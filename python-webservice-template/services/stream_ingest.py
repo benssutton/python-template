@@ -76,6 +76,9 @@ class StreamIngestService:
     def _ingest_loop(self) -> None:
         consecutive_failures = 0
         delay = _INGEST_BASE_DELAY
+        # ingest_max_disconnect_seconds=None disables *all* automatic shutdown:
+        # the watchdog (see __aenter__) and this consecutive-failure trigger.
+        shutdown_on_failure = self._settings.ingest_max_disconnect_seconds is not None
         while True:
             try:
                 for batch in self._consumer.batches():
@@ -92,7 +95,7 @@ class StreamIngestService:
                     "consumer batches() failed (failure %d/%d)",
                     consecutive_failures, _INGEST_MAX_FAILURES,
                 )
-                if consecutive_failures >= _INGEST_MAX_FAILURES:
+                if shutdown_on_failure and consecutive_failures >= _INGEST_MAX_FAILURES:
                     log.critical(
                         "ingest: %d consecutive failures; requesting shutdown",
                         consecutive_failures,

@@ -30,6 +30,7 @@ class ExampleFlightServer(flight.FlightServerBase):
         self._script = script
         self._interval = interval
         self._loop = loop
+        self._stopping = False
         # Use provided schema or fall back to module constant for empty scripts
         self._schema = script[0].schema if script else RECORD_SCHEMA
 
@@ -37,6 +38,11 @@ class ExampleFlightServer(flight.FlightServerBase):
         def gen():
             while True:
                 for batch in self._script:
+                    # Stop streaming when the server is shutting down or the
+                    # client has gone away; otherwise a looping generator keeps
+                    # the RPC in-flight and blocks shutdown() indefinitely.
+                    if self._stopping or context.is_cancelled():
+                        return
                     if self._interval:
                         time.sleep(self._interval)
                     yield batch
@@ -44,6 +50,12 @@ class ExampleFlightServer(flight.FlightServerBase):
                     break
 
         return flight.GeneratorStream(self._schema, gen())
+
+    def shutdown(self):
+        # Signal looping generators to finish so the gRPC graceful shutdown can
+        # complete promptly even while clients are still attached.
+        self._stopping = True
+        super().shutdown()
 
 
 class IdleFlightServer(flight.FlightServerBase):

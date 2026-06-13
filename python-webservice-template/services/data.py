@@ -4,6 +4,7 @@ import time
 from clickhouse_connect.driver.asyncclient import AsyncClient
 
 from schemas.data import DataRowResponse, DataRowsResponse
+from schemas.health import ProbeResult
 
 log = logging.getLogger(__name__)
 
@@ -26,8 +27,7 @@ class DataService:
         ]
         return DataRowsResponse(rows=rows, total=total, limit=limit)
 
-    async def health_check(self) -> "ProbeResult":
-        from schemas.health import ProbeResult
+    async def health_check(self) -> ProbeResult:
 
         start = time.perf_counter()
         try:

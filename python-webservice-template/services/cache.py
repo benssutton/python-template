@@ -4,7 +4,7 @@ from typing import Any
 import redis.asyncio as aioredis
 
 from schemas.cache import CacheEntry
-
+from schemas.health import ProbeResult
 
 class CacheService:
     def __init__(self, client: aioredis.Redis) -> None:
@@ -25,8 +25,7 @@ class CacheService:
         ttl = await self._client.ttl(key)
         return CacheEntry(key=key, value=result, ttl_seconds=ttl if ttl >= 0 else None)
 
-    async def health_check(self) -> "ProbeResult":
-        from schemas.health import ProbeResult
+    async def health_check(self) -> ProbeResult:
 
         start = time.perf_counter()
         try:

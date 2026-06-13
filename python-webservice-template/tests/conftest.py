@@ -121,6 +121,7 @@ async def test_client(
         flight_ticket="items",
         lsm_flush_rows=2,
         lsm_compaction_runs=2,
+        ingest_max_disconnect_seconds=None,  # finite server by design; watchdog would kill the session
     )
 
     async with lifespan_test_client(flight_settings) as client:

@@ -2,7 +2,7 @@ import asyncpg
 import time
 
 from schemas.config import ConfigEntry
-
+from schemas.health import ProbeResult
 
 class ConfigService:
     def __init__(self, pool: asyncpg.Pool) -> None:
@@ -27,8 +27,7 @@ class ConfigService:
             )
             return ConfigEntry(key=row["key"], value=row["value"])
 
-    async def health_check(self) -> "ProbeResult":
-        from schemas.health import ProbeResult
+    async def health_check(self) -> ProbeResult:
 
         start = time.perf_counter()
         try:

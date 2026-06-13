@@ -59,6 +59,7 @@ async def test_client_http(
         flight_ticket="items",
         lsm_flush_rows=2,
         lsm_compaction_runs=2,
+        ingest_max_disconnect_seconds=None,  # empty server by design; watchdog would kill the session
     )
 
     # Isolated app: own container, own FastMCP, own lifespan — safe to run
