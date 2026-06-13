@@ -58,7 +58,7 @@ def create_lifespan(settings: Settings, mcp: FastMCP):
                 compaction_runs=settings.lsm_compaction_runs,
                 key_columns=settings.lsm_key_columns,
             )
-            ingest_svc = await stack.enter_async_context(StreamIngestService(consumer, store))
+            ingest_svc = await stack.enter_async_context(StreamIngestService(consumer, store, settings))
             container.register_singleton(StreamIngestService, ingest_svc)
 
             await stack.enter_async_context(mcp.session_manager.run())
