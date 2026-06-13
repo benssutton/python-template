@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager, AsyncExitStack
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -92,6 +93,11 @@ def create_app(settings: Settings) -> FastAPI:
         lifespan=create_lifespan(settings, mcp),
     )
     app.state.container = container
+
+    @app.middleware("http")
+    async def _track_last_request(request, call_next):
+        request.app.state.container.last_request_at = datetime.now(timezone.utc)
+        return await call_next(request)
 
     app.include_router(health.router, prefix="/health")
     app.include_router(data.router, prefix="/data")
