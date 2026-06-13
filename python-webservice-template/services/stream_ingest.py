@@ -43,6 +43,7 @@ class StreamIngestService:
         self._thread: threading.Thread | None = None
         self._watchdog_task: asyncio.Task | None = None
         self._last_batch_at: datetime | None = None
+        self._started_at: datetime = datetime.now(timezone.utc)
         self._rows_total = 0
 
     async def __aenter__(self) -> "StreamIngestService":
@@ -128,13 +129,17 @@ class StreamIngestService:
     async def health_check(self) -> IngestHealth:
         state = self._consumer.connection_state()
         last = self._last_batch_at
-        seconds_since = (
-            (datetime.now(timezone.utc) - last).total_seconds() if last is not None else None
-        )
+        now = datetime.now(timezone.utc)
+        seconds_since = (now - last).total_seconds() if last is not None else None
         threshold = self._settings.ingest_staleness_threshold_seconds
-        stale = bool(
-            threshold is not None and seconds_since is not None and seconds_since > threshold
-        )
+        # Stale when explicitly configured and either:
+        # - a batch was received but too long ago, or
+        # - no batch has ever been received (use time-since-start as proxy).
+        if threshold is not None:
+            elapsed = seconds_since if seconds_since is not None else (now - self._started_at).total_seconds()
+            stale = elapsed > threshold
+        else:
+            stale = False
         return IngestHealth(
             transport=self._settings.ingest_transport,
             connection_state=state.value,
