@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from settings import Settings
 from services.health import HealthService
@@ -18,7 +19,8 @@ class Container:
     def __init__(self, settings: Settings):
         self._singletons = {}
         self.settings = settings
-        self.register_singleton(HealthService, HealthService(settings))
+        self.last_request_at: datetime | None = None
+        self.register_singleton(HealthService, HealthService(settings, self))
 
     def register_singleton(self, service_type: type, instance):
         self._singletons[service_type] = instance
@@ -27,6 +29,3 @@ class Container:
         if service_type in self._singletons:
             return self._singletons[service_type]
         raise ValueError(f"No service registered for type {service_type.__name__}")
-
-    def clear(self):
-        self._singletons.clear()
