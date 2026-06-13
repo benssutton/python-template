@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     # Ingestion transport selector
     ingest_transport: Literal["flight", "solace"] = "flight"
 
+    # Observability
+    metrics_enabled: bool = True
+    health_check_timeout_seconds: float = 2.0                 # per-dependency ping timeout
+    ingest_staleness_threshold_seconds: float | None = None   # None = staleness never reported
+    ingest_stale_fails_readiness: bool = False                # stale -> 503 only if True
+    ingest_max_disconnect_seconds: float | None = 60.0        # non-CONNECTED longer than this -> SIGTERM; None disables
+
     # Solace — only resolved when ingest_transport="solace"
     solace_host: str = "localhost"
     solace_port: int = 55555

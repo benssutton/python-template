@@ -26,6 +26,10 @@ solace-pubsubplus
 polars
 pyarrow
 
+# Observability
+psutil
+prometheus-fastapi-instrumentator
+
 # Testing
 pytest
 pytest-asyncio
